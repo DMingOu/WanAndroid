@@ -84,7 +84,8 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="已有账号？返回登录页面"
-            android:layout_marginLeft="185dp"
+            android:textSize="15sp"
+            android:layout_marginLeft="175dp"
             android:layout_marginTop="10dp"/>
 
     </LinearLayout>

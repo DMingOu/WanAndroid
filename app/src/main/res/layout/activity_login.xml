@@ -62,6 +62,7 @@
                 android:text="登陆"
                 android:textColorHint="@color/colorAccent"
                 android:textSize="18sp"
+                android:onClick="login"
                 android:background="@drawable/shape_user_button_login"/>
 
 
@@ -72,7 +73,8 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="还没有账号？快来注册一个吧！"
-            android:layout_marginLeft="145dp"
+            android:textSize="15sp"
+            android:layout_marginLeft="134dp"
             android:layout_marginTop="10dp"/>
     </LinearLayout>
 </RelativeLayout>
