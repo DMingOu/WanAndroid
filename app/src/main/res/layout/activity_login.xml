@@ -25,7 +25,7 @@
             >
 
             <EditText
-                android:id="@+id/et_username"
+                android:id="@+id/et_login_username"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
 
@@ -40,7 +40,7 @@
             android:layout_height="wrap_content">
 
             <EditText
-                android:id="@+id/et_password"
+                android:id="@+id/et_login_password"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
 
@@ -57,13 +57,22 @@
             <Button
                 android:id="@+id/bt_login"
                 android:layout_width="343dp"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="30dp"
+                android:layout_height="45dp"
+                android:layout_marginTop="10dp"
                 android:text="登陆"
+                android:textColorHint="@color/colorAccent"
                 android:textSize="18sp"
                 android:background="@drawable/shape_user_button_login"/>
 
+
         </LinearLayout>
 
+        <TextView
+            android:id="@+id/tv_register"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="还没有账号？快来注册一个吧！"
+            android:layout_marginLeft="145dp"
+            android:layout_marginTop="10dp"/>
     </LinearLayout>
 </RelativeLayout>
