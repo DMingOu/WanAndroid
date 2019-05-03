@@ -18,6 +18,16 @@ public class User {
     private DataBean data;
     private int errorCode;//为0，代表登陆或者注册行为成功，其他均为失败
     private String errorMsg;//重注册时，"用户名已被注册!",登陆失败时，"账号密码不匹配！"
+    private String username;
+
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
 
     public DataBean getData() {
         return data;
@@ -43,7 +53,7 @@ public class User {
         this.errorMsg = errorMsg;
     }
 
-    public static class DataBean {
+    public static class  DataBean {
         /**
          * chapterTops : []
          * collectIds : []
@@ -114,13 +124,7 @@ public class User {
             this.type = type;
         }
 
-        public String getUsername() {
-            return username;
-        }
 
-        public void setUsername(String username) {
-            this.username = username;
-        }
 
         public List<?> getChapterTops() {
             return chapterTops;

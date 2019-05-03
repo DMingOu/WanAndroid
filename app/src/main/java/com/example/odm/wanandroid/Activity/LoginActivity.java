@@ -20,9 +20,11 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.example.odm.wanandroid.Application.MyApplication;
 import com.example.odm.wanandroid.R;
 import com.example.odm.wanandroid.Util.JsonUtil;
 import com.example.odm.wanandroid.Util.PostUtil;
+import com.example.odm.wanandroid.Util.SharedPreferencesUtil;
 import com.example.odm.wanandroid.bean.User;
 
 import java.io.UnsupportedEncodingException;
@@ -126,7 +128,7 @@ public class LoginActivity extends AppCompatActivity {
         if(LoginUser.getErrorCode() == 0 ) {
             Looper.prepare();
             Toast.makeText(this,"登录成功！",Toast.LENGTH_SHORT).show();
-
+            SharedPreferencesUtil.saveLoginSharedPreferences(MyApplication.getContext(),mLoginEt_username.getText().toString(),mLoginEt_password.getText().toString());
             //登录成功后跳转到主界面
             Intent intent = new Intent();
             intent.setClass(LoginActivity.this,MainActivity.class);

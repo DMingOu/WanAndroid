@@ -10,8 +10,17 @@
     android:paddingTop="@dimen/activity_vertical_margin"
     tools:context="com.example.odm.wanandroid.Activity.MainActivity">
 
-    <TextView
+<TextView
+    android:id="@+id/tv_islogin"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:text="尚未登录"
+    android:textSize="22sp"/>
+    <Button
+        android:id="@+id/btn_toLogin"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Hello World!" />
+        android:onClick="toLogin"
+        android:layout_below="@id/tv_islogin"
+        android:text="去登录"/>
 </RelativeLayout>

@@ -22,6 +22,10 @@ public class JsonUtil {
             String errorMsg = value.getString("errorMsg");
             user.setErrorMsg(errorMsg);
             Log.e("errorMsg",errorMsg);
+            JSONObject data = value.getJSONObject("data");
+            String username = data.getString("username");
+            user.setUsername(username);
+
         } catch (JSONException e) {
             e.printStackTrace();
         }

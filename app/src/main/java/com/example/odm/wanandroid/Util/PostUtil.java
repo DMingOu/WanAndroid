@@ -24,7 +24,7 @@ import static com.example.odm.wanandroid.Application.AppContext.getContext;
 
 public class PostUtil {
 
-    public static String cookieVal="";
+    //public static String cookieVal="";  存储cookie字符串
     /**
      * @param path 接口路径
      * @param data 参数数据
@@ -45,11 +45,6 @@ public class PostUtil {
             urlConnection.setReadTimeout(5000);
             urlConnection.setConnectTimeout(5000);
 
-            //设置请求的头
-            if(! (CookieUtil.getCookiePreference(MyApplication.getContext()).equals(""))) {
-                urlConnection.setRequestProperty("Cookie", CookieUtil.getCookiePreference(MyApplication.getContext()));
-                Log.e("Cookie",CookieUtil.getCookiePreference(MyApplication.getContext()));
-            }
             // 设置请求的头
             urlConnection.setRequestProperty("Connection", "keep-alive");
             // 设置请求的头
@@ -58,23 +53,25 @@ public class PostUtil {
             urlConnection.setRequestProperty("Content-Length", String.valueOf(data.getBytes().length));
             // 设置请求的头
             urlConnection.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 6.3; WOW64; rv:27.0) Gecko/20100101 Firefox/27.0");
-
+//            //设置请求的头
+//            String s = CookieUtil.getCookiePreference(MyApplication.getContext());
+//            if(! s.equals("")) {
+//                urlConnection.setRequestProperty("Cookie", s);
+//                Log.e("Cookie",s);
+//            }
             //发送POST请求必须设置允许输入和输出
             urlConnection.setDoInput(true);
             urlConnection.setDoOutput(true);
             //POST不能缓存
             urlConnection.setUseCaches(false);
             //data非空,创造对服务器端的输出流
-            if(! data.equals("")) {
                 OutputStream os = urlConnection.getOutputStream();
                 os.write(data.getBytes());
                 os.flush();
+            //cookieVal = urlConnection.getHeaderField("Set-Cookie");
+            //System.out.println("获取到的Cookie："+cookieVal);
+            //CookieUtil.saveCookiePreference(MyApplication.getContext(),cookieVal);
                 os.close();
-            }
-            cookieVal = urlConnection.getHeaderField("Set-Cookie");
-            System.out.println("获取到的Cookie："+cookieVal);
-            CookieUtil.saveCookiePreference(MyApplication.getContext(),cookieVal);
-
             if(urlConnection.getResponseCode() >= 400){
                 is = urlConnection.getErrorStream();
                 System.out.println("网络码"+urlConnection.getResponseCode());
