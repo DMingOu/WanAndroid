@@ -3,43 +3,61 @@ package com.example.odm.wanandroid.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Looper;
+import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.OrientationHelper;
+import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.View;
-import android.webkit.CookieSyncManager;
-import android.widget.Button;
-import android.widget.TextView;
 import android.widget.Toast;
 
+import com.example.odm.wanandroid.Adapter.ArticleAdapter;
 import com.example.odm.wanandroid.Application.MyApplication;
 import com.example.odm.wanandroid.R;
-import com.example.odm.wanandroid.Util.CookieUtil;
 import com.example.odm.wanandroid.Util.JsonUtil;
 import com.example.odm.wanandroid.Util.PostUtil;
 import com.example.odm.wanandroid.Util.SharedPreferencesUtil;
+import com.example.odm.wanandroid.bean.Article;
 import com.example.odm.wanandroid.bean.User;
 
 import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
     private User user;
-    private Button mtoLoginBtn;
-    private TextView misLoginTv;
-
-
+    //private Button mtoLoginBtn;
+    //private TextView misLoginTv;
+    private DrawerLayout mDrawerLayout;
+    private List<Article> articleList = new ArrayList<>();
+    private ArticleAdapter articleAdapter;
+    private RecyclerView mrecyclerView;
+    private LinearLayoutManager lineLayoutManager;
     final String LoginPath = "https://www.wanandroid.com/user/login";
     private static boolean isLogin = false;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        setContentView(R.layout.item_article_recycleview);
         initViews();
         checkStatus();
+        initArticlesData();
+
+
     }
 
     protected void initViews(){
-        mtoLoginBtn =(Button) findViewById(R.id.btn_toLogin);
-        misLoginTv = (TextView) findViewById(R.id.tv_islogin);
+        //mtoLoginBtn =(Button) findViewById(R.id.btn_toLogin);
+        //misLoginTv = (TextView) findViewById(R.id.tv_islogin);
+        //mtoLoginBtn.setVisibility(View.GONE);
+        //misLoginTv.setVisibility(View.GONE);
+        mrecyclerView = (RecyclerView)findViewById(R.id.rv_item_article);
+        lineLayoutManager = new LinearLayoutManager(MainActivity.this);
+        lineLayoutManager.setOrientation(OrientationHelper.VERTICAL);
+        mrecyclerView.setLayoutManager(lineLayoutManager);
+        articleAdapter = new ArticleAdapter(articleList);
+        mrecyclerView.setAdapter(articleAdapter);
     }
     /**
      * 进入软件后判断是否登录，依次检查登录状态和SharedPreferences存储的密码
@@ -95,7 +113,7 @@ public class MainActivity extends AppCompatActivity {
             public void run() {
                 try {
                     Thread.sleep(2000);
-                    misLoginTv.setText("用户"+user.getUsername());
+                    //misLoginTv.setText("用户"+user.getUsername());
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -104,6 +122,14 @@ public class MainActivity extends AppCompatActivity {
 //                Looper.loop();
             }
         });
+    }
+
+    //初始化文章列表里面的数据
+    protected void initArticlesData(){
+        articleList.clear();
+        for(int i = 1; i <= 20  ;i++){
+            articleList.add(new Article("文章类别"+i,"作者"+i, "热度时间"+i,"文章标题"+i));
+        }
     }
 
 }

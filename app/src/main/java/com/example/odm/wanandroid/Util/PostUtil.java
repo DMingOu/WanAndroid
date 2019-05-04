@@ -28,12 +28,12 @@ public class PostUtil {
     /**
      * @param path 接口路径
      * @param data 参数数据
+     * @return resultdata  以字符串形式返回POST请求得到的数据
      */
     public String sendPost(String path, String data) {
         //定义结果字符串
         String resultdata = null;
         InputStream is;
-
         try {
             //请求的地址为path，根据地址创建URL对象
             URL url = new URL(path);
@@ -44,7 +44,6 @@ public class PostUtil {
             //设置请求的超时时间
             urlConnection.setReadTimeout(5000);
             urlConnection.setConnectTimeout(5000);
-
             // 设置请求的头
             urlConnection.setRequestProperty("Connection", "keep-alive");
             // 设置请求的头
@@ -64,7 +63,7 @@ public class PostUtil {
             urlConnection.setDoOutput(true);
             //POST不能缓存
             urlConnection.setUseCaches(false);
-            //data非空,创造对服务器端的输出流
+            //创造对服务器端的输出流
                 OutputStream os = urlConnection.getOutputStream();
                 os.write(data.getBytes());
                 os.flush();
@@ -72,6 +71,7 @@ public class PostUtil {
             //System.out.println("获取到的Cookie："+cookieVal);
             //CookieUtil.saveCookiePreference(MyApplication.getContext(),cookieVal);
                 os.close();
+            //网络返回码不等于200时，说明网络连接(请求POST)出现异常
             if(urlConnection.getResponseCode() >= 400){
                 is = urlConnection.getErrorStream();
                 System.out.println("网络码"+urlConnection.getResponseCode());
