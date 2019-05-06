@@ -1,12 +1,5 @@
 package com.example.odm.wanandroid.Util;
 
-import android.os.Looper;
-import android.util.Log;
-import android.widget.Toast;
-
-import com.example.odm.wanandroid.Application.MyApplication;
-
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -15,8 +8,6 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.ProtocolException;
 import java.net.URL;
-
-import static com.example.odm.wanandroid.Application.AppContext.getContext;
 
 /**
  * Created by ODM on 2019/5/2.

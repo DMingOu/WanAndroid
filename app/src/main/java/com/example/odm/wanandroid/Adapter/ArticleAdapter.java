@@ -34,6 +34,7 @@ public class ArticleAdapter extends RecyclerView.Adapter<ArticleAdapter.ItemArti
         private TextView mTimeTv;
         private TextView mTitleTv;
 
+        //实例化CardView里面的子控件
         public ItemArticleViewHolder(View itemView){
             super(itemView);
             mItemArcticleCV = (CardView)itemView;
@@ -44,7 +45,7 @@ public class ArticleAdapter extends RecyclerView.Adapter<ArticleAdapter.ItemArti
         }
     }
 
-//将文章子项的布局加载进ViewHolder中
+    //将文章item的布局加载进ViewHolder中
     @Override
     public ItemArticleViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         if(mContext == null){
