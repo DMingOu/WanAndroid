@@ -18,10 +18,13 @@ import java.util.List;
  * Created by ODM on 2019/5/4.
  */
 
-public class ArticleAdapter extends RecyclerView.Adapter<ArticleAdapter.ItemArticleViewHolder> {
+public class ArticleAdapter extends RecyclerView.Adapter<ArticleAdapter.ItemArticleViewHolder> implements View.OnClickListener, View.OnLongClickListener {
 
     private List<Article> mArticleList;
     private Context mContext;
+
+    private ArticleRecyclerViewOnItemClickListener onArticleItemClickListener;
+    private ArticleRecyclerViewOnItemLongClickListener onArticleItemLongClickListener;
 
     public ArticleAdapter(List<Article> ArticleList) {
         mArticleList = ArticleList;
@@ -43,6 +46,7 @@ public class ArticleAdapter extends RecyclerView.Adapter<ArticleAdapter.ItemArti
             mTimeTv = (TextView)itemView.findViewById(R.id.tv_time);
             mTitleTv = (TextView)itemView.findViewById(R.id.tv_title);
         }
+
     }
 
     //将文章item的布局加载进ViewHolder中
@@ -52,6 +56,9 @@ public class ArticleAdapter extends RecyclerView.Adapter<ArticleAdapter.ItemArti
             mContext = parent.getContext();
         }
         View view = LayoutInflater.from(mContext).inflate(R.layout.item_article, parent ,false);
+        //item设置点击事件
+        view.setOnClickListener(this);
+        view.setOnLongClickListener(this);
         return new ItemArticleViewHolder(view);
     }
 
@@ -61,11 +68,57 @@ public class ArticleAdapter extends RecyclerView.Adapter<ArticleAdapter.ItemArti
         holder.mTitleTv.setText(article.getTitle());
         holder.mTimeTv.setText(article.getNiceDate());
         holder.mSuperChapterNameTv.setText(article.getSuperChapterName());
-        holder.mAuthorTv.setText(article.getAuthor());
+        holder.mAuthorTv.setText("作者:"+article.getAuthor());
+        //设置Tag方便进行点击事件数据的处理
+        holder.mItemArcticleCV.setTag(position);
     }
 
     @Override
     public int getItemCount() {
         return mArticleList.size();
     }
+
+    @Override
+    public void onClick(View v) {
+        if (onArticleItemClickListener != null) {
+            //注意这里使用getTag方法获取数据
+            onArticleItemClickListener.onArticleItemClickListener(v, (Integer) v.getTag());
+        }
+    }
+
+    @Override
+    public boolean onLongClick(View v) {
+        return onArticleItemLongClickListener != null && onArticleItemLongClickListener.onArticleItemLongClickListener(v, (Integer) v.getTag());
+    }
+
+    /*设置点击事件*/
+    public void setRecyclerViewOnItemClickListener(ArticleRecyclerViewOnItemClickListener onArticleItemClickListener) {
+        this.onArticleItemClickListener = onArticleItemClickListener;
+    }
+
+    /*设置长按事件*/
+    public void setOnItemLongClickListener(ArticleRecyclerViewOnItemLongClickListener onArticleItemLongClickListener) {
+        this.onArticleItemLongClickListener = onArticleItemLongClickListener;
+    }
+
+    /**
+     * 接口：子项点击事件接口
+     */
+    public interface ArticleRecyclerViewOnItemClickListener {
+
+        void onArticleItemClickListener(View view, int position);
+
+    }
+
+
+    /**
+     * 接口：子项长按点击事件
+     */
+    public interface ArticleRecyclerViewOnItemLongClickListener {
+
+        boolean onArticleItemLongClickListener(View view, int position);
+
+    }
+
+
 }

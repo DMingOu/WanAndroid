@@ -17,15 +17,15 @@ import java.net.URL;
  */
 
 public class GetUtil {
+
     /**
      * @param Path  进行GET请求的接口字符串
      * @param resultdata  用来接收JSON数据的字符串
+     * @param handler     与主线程通信的handler
+     * @return resultdata 返回接收到JSON数据的字符串
      */
-    public  static  String  sendGet(final String Path , String resultdata , final Handler handler){
+    public  static  String  sendGet( String Path , String resultdata ,  Handler handler){
 
-//        //new Thread() {
-//            @Override
-//            public void run() {
                 HttpURLConnection connection;
                 try {
                     System.out.println("正在进行sendPost");
@@ -33,20 +33,18 @@ public class GetUtil {
                     connection = (HttpURLConnection) url.openConnection();
                     connection.setRequestMethod("GET");
                     connection.connect();
-                    //接受数据
+                    //接收数据
                     if (connection.getResponseCode() == HttpURLConnection.HTTP_OK) {
                         InputStream inputStream = connection.getInputStream();
                         BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream, "utf-8"));
                         String line;
-                        //不为空进行操作，定义接收JSON数据字符串
-                        //String resultdata = null;
+                        //不为空进行操作
                         while ((line = bufferedReader.readLine()) != null) {
                             resultdata += line;
                         }
                         Log.e("resultdata",resultdata);
                         if (resultdata == null) System.out.println("接收数据一开始就为空了QAQ");
-                        //System.out.println(date+resultdata);
-                        handler.sendEmptyMessage(0x01);  //请求完毕，返回自己自定义的信息 id
+                        handler.sendEmptyMessage(0x01);  //请求完毕，返回自己自定义的信息 id，与主线程通知，开启下一步操作
                     }
                 } catch (MalformedURLException e) {
                     e.printStackTrace();
@@ -55,6 +53,5 @@ public class GetUtil {
                 }
                 return resultdata;
             }
-        //}.start();
     }
 

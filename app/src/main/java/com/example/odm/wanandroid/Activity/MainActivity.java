@@ -1,6 +1,8 @@
 package com.example.odm.wanandroid.Activity;
 
+import android.app.ProgressDialog;
 import android.content.Intent;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -42,13 +44,13 @@ public class MainActivity extends AppCompatActivity {
     private PageListData pageListData;
     private String articleJsondata  = "";
     private String resultdata = "";
-
+    private  ArticleListTask  mALTask = new ArticleListTask();
     final String LoginPath = "https://www.wanandroid.com/user/login";
     final String ArticleListPath = "https://www.wanandroid.com/article/list/";
     private static boolean isLogin = false;
 
 
-    //处理返回结果的函数，系统提供的类方法  //handler处理返回数据， 此方法，我写在onCreate()函数外。
+    //处理返回结果的函数，系统提供的类方法  //handler处理返回数据
    Handler handler = new Handler(){//此函数是属于MainActivity.java所在线程的函数方法，所以可以直接调用MainActivity的 所有方法。
         public void handleMessage(Message msg) {
             if (msg.what == 0x01) {   //
@@ -68,23 +70,44 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.item_article_recycleview);
         initViews();
-
+        initArticleAdapter();
+        mALTask.execute(ArticleListPath);
         checkStatus();
-        initArticlesData();
     }
 
+    protected void initArticleAdapter(){
+        articleAdapter = new ArticleAdapter(articleList);
+        //设置ArticleAdapter的每个子项的点击事件
+        articleAdapter.setRecyclerViewOnItemClickListener(new ArticleAdapter.ArticleRecyclerViewOnItemClickListener() {
+            @Override
+            public void onArticleItemClickListener(View view, int position) {
+                Intent intent = new Intent(MainActivity.this,WebContentActivity.class);
+                intent.putExtra("url",articleList.get(position).getLink());
+                intent.putExtra("title",articleList.get(position).getTitle());
+                startActivity(intent);
+                //Toast.makeText(MainActivity.this, articleList.get(position).getLink(), Toast.LENGTH_SHORT).show();
+            }
+        });
+        //设置ArticleAdapter的每个子项的长按点击事件
+        articleAdapter.setOnItemLongClickListener(new ArticleAdapter.ArticleRecyclerViewOnItemLongClickListener(){
+            @Override
+            public boolean onArticleItemLongClickListener  (View view, int position) {
+                //Toast.makeText(MainActivity.this, articleList.get(position).getLink(), Toast.LENGTH_SHORT).show();
+                Intent intent = new Intent(MainActivity.this,WebContentActivity.class);
+                intent.putExtra("title",articleList.get(position).getTitle());
+                intent.putExtra("url",articleList.get(position).getLink());
+                startActivity(intent);
+                return true;
+            }
+        } );
+    }
     protected void initViews(){
-        //mtoLoginBtn =(Button) findViewById(R.id.btn_toLogin);
-        //misLoginTv = (TextView) findViewById(R.id.tv_islogin);
-        //mtoLoginBtn.setVisibility(View.GONE);
-        //misLoginTv.setVisibility(View.GONE);
         mRecyclerView = (RecyclerView)findViewById(R.id.rv_item_article);
         lineLayoutManager = new LinearLayoutManager(MainActivity.this);
         lineLayoutManager.setOrientation(OrientationHelper.VERTICAL);
         mRecyclerView.setLayoutManager(lineLayoutManager);
-        articleAdapter = new ArticleAdapter(articleList);
-        mRecyclerView.setAdapter(articleAdapter);
-    }
+        }
+
     /**
      * 进入软件后判断是否登录，依次检查登录状态和SharedPreferences存储的密码
      */
@@ -114,7 +137,7 @@ public class MainActivity extends AppCompatActivity {
             } catch (UnsupportedEncodingException e) {
                 e.printStackTrace();
             }
-            changeTextViewByRunOnUiThread(user);
+            //changeTextViewByRunOnUiThread(user);
         }
     }
 
@@ -134,37 +157,85 @@ public class MainActivity extends AppCompatActivity {
 
     private  void changeTextViewByRunOnUiThread(final User user)
     {
-        MainActivity.this.runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                try {
+//        MainActivity.this.runOnUiThread(new Runnable() {
+//            @Override
+//            public void run() {
+//                try {
+//                    Thread.sleep(1500);
+//                    //misLoginTv.setText("用户"+user.getUsername());
+//                } catch (InterruptedException e) {
+//                    e.printStackTrace();
+//                }
+////                Looper.prepare();
+////                Toast.makeText(MainActivity.this,"用户"+user.getUsername(),Toast.LENGTH_SHORT).show();
+////                Looper.loop();
+//            }
+//        });
+        try {
                     Thread.sleep(1500);
                     //misLoginTv.setText("用户"+user.getUsername());
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
-//                Looper.prepare();
-//                Toast.makeText(MainActivity.this,"用户"+user.getUsername(),Toast.LENGTH_SHORT).show();
-//                Looper.loop();
+    }
+
+
+    public class ArticleListTask extends AsyncTask<String,Integer,List<Article> > {
+
+        private ProgressDialog progressDialog;
+
+        /**
+         * 设置进度条对话框，缓解在处理数据过多时屏幕白屏的尴尬
+         */
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            progressDialog = new ProgressDialog(MainActivity.this);
+            progressDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+            progressDialog.setMax(20);
+            progressDialog.setMessage("正在努力加载中");
+            progressDialog.show();
+        }
+
+
+        /**
+         * @param params  启动任务执行的输入参数 params[0]
+         * @return  后台计算结果,返回給onPostExecute方法
+         */
+        @Override
+        protected List<Article> doInBackground(String... params) {
+            articleList.clear();
+            for (int i = 0; i < 10; i++) {
+                //初始化文章列表里面的数据
+                publishProgress(i);
+                resultdata =  GetUtil.sendGet(params[0] + i + "/json", articleJsondata, handler);
             }
-        });
+            return articleList;
+        }
+
+        /**
+         * 设置进度条
+         * @param values doInbackground方法传来的参数
+         */
+        @Override
+        protected void onProgressUpdate(Integer... values) {
+            super.onProgressUpdate(values);
+            progressDialog.setProgress(values[0]);
+        }
+
+
+        /**
+         * 为Recycler的Adapter装填数据
+         * @param articleList  文章列表数据，doInbackground方法返回的结果
+         */
+        @Override
+        protected void onPostExecute(List<Article> articleList) {
+            progressDialog.dismiss();//数据处理完成，隐藏对话框
+            System.out.println("正在执行onPostExecute方法");
+            super.onPostExecute(articleList);
+            mRecyclerView.setAdapter(articleAdapter);
+            articleAdapter.notifyDataSetChanged();//刷新Adapter数据
+        }
     }
 
-    //初始化文章列表里面的数据
-    protected void initArticlesData()  {
-        articleList.clear();
-//        for(int i = 1; i <= 20  ;i++){
-//            articleList.add(new Article("文章类别"+i,"作者"+i, "热度时间"+i,"文章标题"+i));
-//        }
-        //获取三页的文章列表的数据，解析后添加到articlList里面
-            new Thread() {
-                @Override
-                public void run() {
-                    for (int i = 0; i < 2; i++) {
-                      resultdata =  GetUtil.sendGet(ArticleListPath + i + "/json", articleJsondata, handler);
-                    }
-                }
-            }.start();
-
-    }
 }
