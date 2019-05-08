@@ -33,8 +33,6 @@ import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
     private User user;
-    //private Button mtoLoginBtn;
-    //private TextView misLoginTv;
     private DrawerLayout mDrawerLayout;
     private List<Article> articleList = new ArrayList<>();
     private List<PageListData> pageListDataList = new ArrayList<>();
@@ -75,24 +73,26 @@ public class MainActivity extends AppCompatActivity {
         checkStatus();
     }
 
+    /**
+     * 初始化文章列表,但未装填数据
+     */
     protected void initArticleAdapter(){
         articleAdapter = new ArticleAdapter(articleList);
-        //设置ArticleAdapter的每个子项的点击事件
+        //设置ArticleAdapter的每个子项的点击事件--跳转到网页
         articleAdapter.setRecyclerViewOnItemClickListener(new ArticleAdapter.ArticleRecyclerViewOnItemClickListener() {
             @Override
-            public void onArticleItemClickListener(View view, int position) {
+            public void onArticleItemClick(View view, int position) {
+                System.out.println("onArticleItemClick方法");
                 Intent intent = new Intent(MainActivity.this,WebContentActivity.class);
                 intent.putExtra("url",articleList.get(position).getLink());
                 intent.putExtra("title",articleList.get(position).getTitle());
                 startActivity(intent);
-                //Toast.makeText(MainActivity.this, articleList.get(position).getLink(), Toast.LENGTH_SHORT).show();
             }
         });
-        //设置ArticleAdapter的每个子项的长按点击事件
+        //设置ArticleAdapter的每个子项的长按点击事件--跳转到网页
         articleAdapter.setOnItemLongClickListener(new ArticleAdapter.ArticleRecyclerViewOnItemLongClickListener(){
             @Override
-            public boolean onArticleItemLongClickListener  (View view, int position) {
-                //Toast.makeText(MainActivity.this, articleList.get(position).getLink(), Toast.LENGTH_SHORT).show();
+            public boolean onArticleItemLongClick (View view, int position) {
                 Intent intent = new Intent(MainActivity.this,WebContentActivity.class);
                 intent.putExtra("title",articleList.get(position).getTitle());
                 intent.putExtra("url",articleList.get(position).getLink());

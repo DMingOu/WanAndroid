@@ -47,4 +47,29 @@ public class SharedPreferencesUtil {
         }
         return  data;
     }
+
+    /**
+     * 储存阅读过的文章的标题
+     * @param context
+     * @param title
+     */
+    public static void saveArticleTitle_IsRead(Context context,String title) {
+        SharedPreferences sharedPreferences = context.getSharedPreferences(LOGIN,Context.MODE_PRIVATE);
+        SharedPreferences.Editor  editor = sharedPreferences.edit();
+        editor.putString("ArticleTitle",title);
+        editor.apply();
+    }
+
+    /**
+     * 读取已经读取过
+     * @param context
+     * @return
+     */
+    public  static String getArticleTitle_IsRead(Context  context){
+        String title;
+        SharedPreferences sharedPreferences = context.getSharedPreferences(LOGIN,Context.MODE_PRIVATE);
+        title = sharedPreferences.getString("ArticleTitle","");
+        return  title;
+    }
+
 }
