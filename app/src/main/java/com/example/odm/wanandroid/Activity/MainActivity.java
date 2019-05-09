@@ -1,23 +1,30 @@
 package com.example.odm.wanandroid.Activity;
 
 import android.app.ProgressDialog;
+import android.content.ContentValues;
 import android.content.Intent;
+import android.database.sqlite.SQLiteDatabase;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 import android.support.v4.widget.DrawerLayout;
+import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.OrientationHelper;
 import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.Toast;
 
 import com.example.odm.wanandroid.Adapter.ArticleAdapter;
 import com.example.odm.wanandroid.Application.MyApplication;
+import com.example.odm.wanandroid.Db.ArticlebaseHelper;
 import com.example.odm.wanandroid.R;
 import com.example.odm.wanandroid.Util.GetUtil;
 import com.example.odm.wanandroid.Util.JsonUtil;
@@ -43,6 +50,7 @@ public class MainActivity extends AppCompatActivity {
     private String articleJsondata  = "";
     private String resultdata = "";
     private  ArticleListTask  mALTask = new ArticleListTask();
+    private ArticlebaseHelper dbHelper;
     final String LoginPath = "https://www.wanandroid.com/user/login";
     final String ArticleListPath = "https://www.wanandroid.com/article/list/";
     private static boolean isLogin = false;
@@ -66,7 +74,8 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.item_article_recycleview);
+        setContentView(R.layout.activity_show_ariticle);
+        dbHelper = new ArticlebaseHelper(this,"Article.db",null,1);
         initViews();
         initArticleAdapter();
         mALTask.execute(ArticleListPath);
@@ -78,11 +87,15 @@ public class MainActivity extends AppCompatActivity {
      */
     protected void initArticleAdapter(){
         articleAdapter = new ArticleAdapter(articleList);
-        //设置ArticleAdapter的每个子项的点击事件--跳转到网页
+        //设置ArticleAdapter的每个子项的点击事件--往数据增加已读文章的标题，跳转到对应网页
         articleAdapter.setRecyclerViewOnItemClickListener(new ArticleAdapter.ArticleRecyclerViewOnItemClickListener() {
             @Override
             public void onArticleItemClick(View view, int position) {
                 System.out.println("onArticleItemClick方法");
+                SQLiteDatabase db = dbHelper.getWritableDatabase();
+                ContentValues values = new ContentValues();    //创建存放数据的ContentValues对象
+                values.put("title",articleList.get(position).getTitle());
+                db.insert("Article",null,values); //数据库执行插入命令
                 Intent intent = new Intent(MainActivity.this,WebContentActivity.class);
                 intent.putExtra("url",articleList.get(position).getLink());
                 intent.putExtra("title",articleList.get(position).getTitle());
@@ -93,6 +106,10 @@ public class MainActivity extends AppCompatActivity {
         articleAdapter.setOnItemLongClickListener(new ArticleAdapter.ArticleRecyclerViewOnItemLongClickListener(){
             @Override
             public boolean onArticleItemLongClick (View view, int position) {
+                SQLiteDatabase db = dbHelper.getWritableDatabase();
+                ContentValues values = new ContentValues();    //创建存放数据的ContentValues对象
+                values.put("title",articleList.get(position).getTitle());
+                db.insert("Article",null,values); //数据库执行插入命令
                 Intent intent = new Intent(MainActivity.this,WebContentActivity.class);
                 intent.putExtra("title",articleList.get(position).getTitle());
                 intent.putExtra("url",articleList.get(position).getLink());
@@ -102,7 +119,17 @@ public class MainActivity extends AppCompatActivity {
         } );
     }
     protected void initViews(){
+        Toolbar toolbar_main = (Toolbar) findViewById(R.id.tool_bar_main);
+        setSupportActionBar(toolbar_main);
+        ActionBar actionBar = getSupportActionBar();
+        if (actionBar != null){
+            //使左上角图标是否显示，如果设成false，则没有程序图标，仅仅就个标题，否则，显示应用程序图标，对应id为android.R.id.home，对应ActionBar.DISPLAY_SHOW_HOME
+            actionBar.setDisplayHomeAsUpEnabled(true);
+            actionBar.setHomeAsUpIndicator(R.drawable.user);
+            //actionBar.setDisplayShowTitleEnabled(false); //隐藏标题栏的标题
+        }
         mRecyclerView = (RecyclerView)findViewById(R.id.rv_item_article);
+        //mRecyclerView.setItemViewCacheSize(500);//设置RecyclerView的缓存数量, 大了就不复用ViewHolder，直接全部新建，布局建多了卡是迟早的事
         lineLayoutManager = new LinearLayoutManager(MainActivity.this);
         lineLayoutManager.setOrientation(OrientationHelper.VERTICAL);
         mRecyclerView.setLayoutManager(lineLayoutManager);
@@ -238,4 +265,44 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+
+    /**
+     * 给标题栏加载menu菜单布局
+     * @param menu
+     * @return
+     */
+    public boolean onCreateOptionsMenu(Menu menu){
+        getMenuInflater().inflate(R.menu.toolbar_main,menu);
+        return  true;
+    }
+
+
+    /**
+     * 处理标题栏各个按钮的点击事件
+     * @param item
+     * @return
+     */
+    @Override
+    public  boolean onOptionsItemSelected(MenuItem item) {
+        int id = item.getItemId();
+//        System.out.println("R.id.home id :"+R.id.home);
+//        Log.e("id","id为"+id);
+        switch (id) {
+            case 16908332://左上角按钮的实际id，但是用R.id.home 会找不到
+                Intent intent = new Intent();
+                intent.setClass(MainActivity.this,LoginActivity.class);
+                startActivity(intent);
+                //Toast.makeText(this,"即将打开用户页面",Toast.LENGTH_SHORT).show();
+                break;
+            case R.id.item_toolbar_search:
+                Toast.makeText(this,"即将打开搜索页面",Toast.LENGTH_SHORT).show();
+                break;
+
+        }
+        return true;
+    }
+
+
 }
+
+

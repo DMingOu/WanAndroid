@@ -1,14 +1,18 @@
 package com.example.odm.wanandroid.Adapter;
 
 import android.content.Context;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Color;
 import android.support.v7.widget.CardView;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
+import com.example.odm.wanandroid.Db.ArticlebaseHelper;
 import com.example.odm.wanandroid.R;
 import com.example.odm.wanandroid.bean.Article;
 
@@ -30,6 +34,8 @@ public class ArticleAdapter extends RecyclerView.Adapter<ArticleAdapter.ItemArti
     public ArticleAdapter(List<Article> ArticleList) {
         mArticleList = ArticleList;
     }
+
+    private ArticlebaseHelper  dbhelper;
 
     public  static  class ItemArticleViewHolder extends RecyclerView.ViewHolder{
         private CardView  mItemArcticleCV;
@@ -57,9 +63,7 @@ public class ArticleAdapter extends RecyclerView.Adapter<ArticleAdapter.ItemArti
             mContext = parent.getContext();
         }
         View view = LayoutInflater.from(mContext).inflate(R.layout.item_article, parent ,false);
-        //item设置点击事件
-        //view.setOnClickListener(this);
-        //view.setOnLongClickListener(this);
+        dbhelper =  new ArticlebaseHelper(mContext,"Article.db",null,1);
         return new ItemArticleViewHolder(view);
     }
 
@@ -67,8 +71,25 @@ public class ArticleAdapter extends RecyclerView.Adapter<ArticleAdapter.ItemArti
     public void onBindViewHolder(final ItemArticleViewHolder holder, int position) {
         final Article article = mArticleList.get(position);
         holder.mTitleTv.setText(article.getTitle());
+        SQLiteDatabase db = dbhelper.getReadableDatabase();
+        //查询Article表对象，创建游标对象
+        Cursor cursor = db.query("Article", new String[] {"title"}, null, null, null, null, null);
+        //boolean isCilck = false; //设置文章是否被读，若数据库有相同标题，则文章已读
+        if (cursor.moveToFirst()) {
+            do {
+                String title = cursor.getString(cursor.getColumnIndex("title"));
+                if (article.getTitle().equals(title)) {
+                    Log.e("Articletitle",article.getTitle());
+                    holder.mTitleTv.setTextColor(Color.parseColor("#999999"));
+                    break;
+                } else {
+                    holder.mTitleTv.setTextColor(Color.parseColor("#000000"));
+                }
+            } while (cursor.moveToNext());
+        }
+        cursor.close();
         //若文章已有被点击属性，则被设为灰色已读
-        if(article.isClicked()) holder.mTitleTv.setTextColor(Color.parseColor("#999999"));
+        //if (isCilck)  holder.mTitleTv.setTextColor(Color.parseColor("#999999"));
         holder.mTimeTv.setText(article.getNiceDate());
         holder.mSuperChapterNameTv.setText(article.getSuperChapterName());
         holder.mAuthorTv.setText("作者:" + article.getAuthor());
@@ -81,8 +102,8 @@ public class ArticleAdapter extends RecyclerView.Adapter<ArticleAdapter.ItemArti
                 article.setClicked(true);
                 holder.mTitleTv.setTextColor(Color.parseColor("#999999"));//灰色
                 if (onArticleItemClickListener != null) {
-            //注意这里使用getTag方法获取数据
-            onArticleItemClickListener.onArticleItemClick(view, (Integer) view.getTag());
+                //注意这里使用getTag方法获取数据
+                onArticleItemClickListener.onArticleItemClick(view, (Integer) view.getTag());
                 }
             }
         });
@@ -101,11 +122,6 @@ public class ArticleAdapter extends RecyclerView.Adapter<ArticleAdapter.ItemArti
         return mArticleList.size();
     }
 
-
-//    @Override
-//    public boolean onLongClick(View v) {
-//        return onArticleItemLongClickListener != null && onArticleItemLongClickListener.onArticleItemLongClick(v, (Integer) v.getTag());
-//    }
 
     /*设置点击事件监视*/
     public void setRecyclerViewOnItemClickListener(ArticleRecyclerViewOnItemClickListener onArticleItemClickListener) {
