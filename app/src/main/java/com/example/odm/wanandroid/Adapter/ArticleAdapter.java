@@ -6,6 +6,7 @@ import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Color;
 import android.support.v7.widget.CardView;
 import android.support.v7.widget.RecyclerView;
+import android.text.Html;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -38,7 +39,7 @@ public class ArticleAdapter extends RecyclerView.Adapter<ArticleAdapter.ItemArti
     private ArticlebaseHelper  dbhelper;
 
     public  static  class ItemArticleViewHolder extends RecyclerView.ViewHolder{
-        private CardView  mItemArcticleCV;
+        private CardView mItemArcticleCV;
         private TextView mSuperChapterNameTv;
         private TextView mAuthorTv;
         private TextView mTimeTv;
@@ -70,11 +71,10 @@ public class ArticleAdapter extends RecyclerView.Adapter<ArticleAdapter.ItemArti
     @Override
     public void onBindViewHolder(final ItemArticleViewHolder holder, int position) {
         final Article article = mArticleList.get(position);
-        holder.mTitleTv.setText(article.getTitle());
+        holder.mTitleTv.setText(Html.fromHtml(article.getTitle()));
         SQLiteDatabase db = dbhelper.getReadableDatabase();
         //查询Article表对象，创建游标对象
         Cursor cursor = db.query("Article", new String[] {"title"}, null, null, null, null, null);
-        //boolean isCilck = false; //设置文章是否被读，若数据库有相同标题，则文章已读
         if (cursor.moveToFirst()) {
             do {
                 String title = cursor.getString(cursor.getColumnIndex("title"));
@@ -89,7 +89,6 @@ public class ArticleAdapter extends RecyclerView.Adapter<ArticleAdapter.ItemArti
         }
         cursor.close();
         //若文章已有被点击属性，则被设为灰色已读
-        //if (isCilck)  holder.mTitleTv.setTextColor(Color.parseColor("#999999"));
         holder.mTimeTv.setText(article.getNiceDate());
         holder.mSuperChapterNameTv.setText(article.getSuperChapterName());
         holder.mAuthorTv.setText("作者:" + article.getAuthor());
@@ -111,7 +110,7 @@ public class ArticleAdapter extends RecyclerView.Adapter<ArticleAdapter.ItemArti
             @Override
             public boolean onLongClick(View v) {
                 article.setClicked(true);
-                holder.mTitleTv.setTextColor(Color.parseColor("#999999"));//灰色
+                holder.mTitleTv.setTextColor(Color.parseColor("#999999"));
                 return onArticleItemLongClickListener != null && onArticleItemLongClickListener.onArticleItemLongClick(v, (Integer) v.getTag());
              }
         });

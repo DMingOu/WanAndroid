@@ -83,7 +83,7 @@ public class RegisterActivity extends AppCompatActivity {
 
     /**
      * 说明：用户点击注册键后，符合条件就发送POST请求申请注册
-     * @param 控件V
+     * @param v 控件
      */
     public void register(View v){
         //获取点击控件的ID，并根据ID判断怎样处理

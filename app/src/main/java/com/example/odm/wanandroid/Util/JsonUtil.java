@@ -1,5 +1,6 @@
 package com.example.odm.wanandroid.Util;
 
+import android.content.Context;
 import android.util.Log;
 
 import com.example.odm.wanandroid.bean.Article;
@@ -17,6 +18,8 @@ import java.util.List;
  */
 
 public class JsonUtil {
+
+    private Context mContext;
 
     public void handleUserdata(User user,String acceptdata){
         try {
@@ -53,8 +56,8 @@ public class JsonUtil {
                 JSONObject data = json.getJSONObject("data");
                 //JSONObject data = new JSONObject(acceptdata);
                 int curPage = data.getInt("curPage");
-                System.out.println("curPage的值："+curPage);
                 pageListData.setCurPage(curPage);
+                int total = data.getInt("total");
                 JSONArray datas = data.getJSONArray("datas");
                 for(int i = 0; i <datas.length(); i++) {
                     JSONObject content = datas.getJSONObject(i);
@@ -62,15 +65,28 @@ public class JsonUtil {
                             content.getString("author"),
                             content.getString("niceDate"),
                             content.getString("title"));
+                            //title_fix(content.getString("title")));
                     Log.d("title",article.getTitle());
                     article.setLink(content.getString("link"));
                     articleList.add(article);
                 }
-            }
 
+            }
         } catch (JSONException e) {
             e.printStackTrace();
         }
 
+    }
+
+    /**
+     * 搜索接口返回的数据，title属性带有<em class='highlight'>与</em>，不让它们显示在标题上
+     * @param uncorrent_title
+     * @return
+     */
+    public static String title_fix(String uncorrent_title){
+        String corrent_title = "";
+        uncorrent_title = uncorrent_title.replace("<em class='highlight'>","");
+        corrent_title = uncorrent_title.replace("</em>","");
+        return corrent_title;
     }
 }

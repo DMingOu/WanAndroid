@@ -9,7 +9,6 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
-import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
@@ -39,8 +38,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
+
+   // private DrawerLayout mDrawerLayout;
     private User user;
-    private DrawerLayout mDrawerLayout;
     private List<Article> articleList = new ArrayList<>();
     private List<PageListData> pageListDataList = new ArrayList<>();
     private ArticleAdapter articleAdapter;
@@ -49,10 +49,10 @@ public class MainActivity extends AppCompatActivity {
     private PageListData pageListData;
     private String articleJsondata  = "";
     private String resultdata = "";
-    private  ArticleListTask  mALTask = new ArticleListTask();
+    private ArticleListTask  mALTask = new ArticleListTask();
     private ArticlebaseHelper dbHelper;
-    final String LoginPath = "https://www.wanandroid.com/user/login";
-    final String ArticleListPath = "https://www.wanandroid.com/article/list/";
+    final   String LoginPath = "https://www.wanandroid.com/user/login";
+    final   String ArticleListPath = "https://www.wanandroid.com/article/list/";
     private static boolean isLogin = false;
 
 
@@ -253,7 +253,7 @@ public class MainActivity extends AppCompatActivity {
 
         /**
          * 为Recycler的Adapter装填数据
-         * @param articleList  文章列表数据，doInbackground方法返回的结果
+         * @param articleList  已有数据的文章列表，doInbackground方法返回的结果
          */
         @Override
         protected void onPostExecute(List<Article> articleList) {
@@ -289,13 +289,15 @@ public class MainActivity extends AppCompatActivity {
 //        Log.e("id","id为"+id);
         switch (id) {
             case 16908332://左上角按钮的实际id，但是用R.id.home 会找不到
-                Intent intent = new Intent();
-                intent.setClass(MainActivity.this,LoginActivity.class);
-                startActivity(intent);
+                Intent intent_user = new Intent();
+                intent_user.setClass(MainActivity.this,LoginActivity.class);
+                startActivity(intent_user);
                 //Toast.makeText(this,"即将打开用户页面",Toast.LENGTH_SHORT).show();
                 break;
             case R.id.item_toolbar_search:
-                Toast.makeText(this,"即将打开搜索页面",Toast.LENGTH_SHORT).show();
+                Intent intent_search = new Intent();
+                intent_search.setClass(MainActivity.this,Search_ArticleActivity.class);
+                startActivity(intent_search);
                 break;
 
         }

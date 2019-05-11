@@ -84,7 +84,7 @@ public class PostUtil {
                 baos.close();
                 //返回结果字符串（JSON数据）
                 resultdata = new String(baos.toByteArray());
-                System.out.println("返回数据"+ resultdata);
+                System.out.println("Post请求得到的返回数据"+ resultdata);
                 //关闭连接
                 urlConnection.disconnect();
             } catch (ProtocolException e1) {
