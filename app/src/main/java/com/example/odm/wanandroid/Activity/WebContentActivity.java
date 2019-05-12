@@ -4,6 +4,7 @@ import android.os.Bundle;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.text.Html;
 import android.view.MenuItem;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -31,7 +32,8 @@ public class WebContentActivity extends AppCompatActivity {
         mContentWV.setWebViewClient(new WebViewClient());
         String url = getIntent().getStringExtra("url");
         String title = getIntent().getStringExtra("title");
-        actionBar.setTitle(title);
+        //由搜索界面点进来的网页，传进来的标题是带有html语言的
+        actionBar.setTitle(Html.fromHtml(title));
         mContentWV.loadUrl(url);
     }
 

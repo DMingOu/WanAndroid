@@ -68,7 +68,7 @@ public class LoginActivity extends AppCompatActivity {
         ClickableSpan clickableSpan = new ClickableSpan() {
             @Override
             public void onClick(View widget) {
-                Toast.makeText(LoginActivity.this, "触发点击跳转注册事件!", Toast.LENGTH_SHORT).show();
+                //Toast.makeText(LoginActivity.this, "触发点击跳转注册事件!", Toast.LENGTH_SHORT).show();
                 Intent intent = new Intent();
                 intent.setClass(LoginActivity.this,RegisterActivity.class);
                 startActivity(intent);
@@ -90,14 +90,14 @@ public class LoginActivity extends AppCompatActivity {
      * @param 控件V
      */
     public void login(View v){
-        Toast.makeText(LoginActivity.this,"登录按钮被点击",Toast.LENGTH_SHORT).show();
+        //Toast.makeText(LoginActivity.this,"登录按钮被点击",Toast.LENGTH_SHORT).show();
         int id = v.getId();
         switch (id) {
             case R.id.bt_login:
                 final String userName = mLoginEt_username.getText().toString();
                 final String userPwd = mLoginEt_password.getText().toString();
                 if(TextUtils.isEmpty(userName) || TextUtils.isEmpty(userPwd)) {
-                    Toast.makeText(LoginActivity.this,"用户名或密码不能为空",Toast.LENGTH_SHORT).show();
+                    Toast.makeText(LoginActivity.this,"用户名或密码不能为空",Toast.LENGTH_LONG).show();
                     if(TextUtils.isEmpty(userName)){
                         mLoginEt_username.requestFocus();
                     }
@@ -112,7 +112,6 @@ public class LoginActivity extends AppCompatActivity {
                             try {
                                 //"?username="是错误的，会导致网络返回码400，出现服务器无法理解的语法，虽然在Postman上模拟的完整接口有?，但是Post请求真正发送的并不是自己简单拼接起来的
                                 data = "username="+ URLEncoder.encode(userName,"UTF-8")+"&password="+URLEncoder.encode(userPwd,"UTF-8");
-                                Log.e("finalPath",LoginPath+"?"+data);
                                 jsonUtil.handleUserdata(LoginUser,postUtil.sendPost(LoginPath,data));
                                 checkLogin();
                             } catch (UnsupportedEncodingException e) {

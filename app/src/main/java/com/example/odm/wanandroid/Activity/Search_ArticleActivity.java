@@ -197,8 +197,6 @@ public class Search_ArticleActivity extends AppCompatActivity {
 
 
 
-
-
     /**
      * 隐藏软键盘
      * @param view ：一般是EditText使用

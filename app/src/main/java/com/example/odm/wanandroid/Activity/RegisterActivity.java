@@ -64,7 +64,7 @@ public class RegisterActivity extends AppCompatActivity {
         ClickableSpan clickableSpan = new ClickableSpan() {
             @Override
             public void onClick(View widget) {
-                Toast.makeText(RegisterActivity.this, "触发点击跳转登录事件!", Toast.LENGTH_SHORT).show();
+                //Toast.makeText(RegisterActivity.this, "触发点击跳转登录事件!", Toast.LENGTH_SHORT).show();
                 Intent intent = new Intent();
                 intent.setClass(RegisterActivity.this,LoginActivity.class);
                 startActivity(intent);
@@ -87,7 +87,7 @@ public class RegisterActivity extends AppCompatActivity {
      */
     public void register(View v){
         //获取点击控件的ID，并根据ID判断怎样处理
-        Toast.makeText(this,"注册按钮被点击",Toast.LENGTH_SHORT).show();
+        //Toast.makeText(this,"注册按钮被点击",Toast.LENGTH_SHORT).show();
         int id = v.getId();
         switch (id) {
             case R.id.bt_register:
@@ -100,7 +100,7 @@ public class RegisterActivity extends AppCompatActivity {
                 Log.e("userpwd",userpwd);
                 Log.e("reuserpwd",userpwd_confirm);
                 if(TextUtils.isEmpty(username) || TextUtils.isEmpty(userpwd) || TextUtils.isEmpty(userpwd_confirm)){
-                    Toast.makeText(this,"用户名或者密码不能为空",Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this,"用户名或者密码不能为空",Toast.LENGTH_LONG).show();
                     //让空框获得焦点,让用户可以输入
                     if(!TextUtils.isEmpty(username)){
                         mRgtEt_username.requestFocus();

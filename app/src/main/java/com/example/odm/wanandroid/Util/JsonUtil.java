@@ -47,11 +47,9 @@ public class JsonUtil {
      */
     public static void handleArtcileData(List<Article> articleList , PageListData pageListData, String acceptdata) {
         try{
-            System.out.println("正在进行解析JSON数据"+acceptdata);
             if(acceptdata == null){
                 System.out.println("数据为空");
             }else {
-                Log.e("acceptdata", acceptdata );
                 JSONObject json = new JSONObject(acceptdata);
                 JSONObject data = json.getJSONObject("data");
                 //JSONObject data = new JSONObject(acceptdata);
@@ -66,7 +64,6 @@ public class JsonUtil {
                             content.getString("niceDate"),
                             content.getString("title"));
                             //title_fix(content.getString("title")));
-                    Log.d("title",article.getTitle());
                     article.setLink(content.getString("link"));
                     articleList.add(article);
                 }

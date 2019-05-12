@@ -1,23 +1,24 @@
 package com.example.odm.wanandroid.Activity;
 
-import android.app.ProgressDialog;
 import android.content.ContentValues;
 import android.content.Intent;
 import android.database.sqlite.SQLiteDatabase;
+import android.graphics.Color;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
+import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
-import android.support.v7.widget.OrientationHelper;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Toast;
 
@@ -25,6 +26,7 @@ import com.example.odm.wanandroid.Adapter.ArticleAdapter;
 import com.example.odm.wanandroid.Application.MyApplication;
 import com.example.odm.wanandroid.Db.ArticlebaseHelper;
 import com.example.odm.wanandroid.R;
+import com.example.odm.wanandroid.RecyclerViewNoBugLinearLayoutManager;
 import com.example.odm.wanandroid.Util.GetUtil;
 import com.example.odm.wanandroid.Util.JsonUtil;
 import com.example.odm.wanandroid.Util.PostUtil;
@@ -45,26 +47,32 @@ public class MainActivity extends AppCompatActivity {
     private List<PageListData> pageListDataList = new ArrayList<>();
     private ArticleAdapter articleAdapter;
     private RecyclerView mRecyclerView;
-    private LinearLayoutManager lineLayoutManager;
+//    private LinearLayoutManager lineLayoutManager;
+    private RecyclerViewNoBugLinearLayoutManager  RVlinelayoutManager;
     private PageListData pageListData;
     private String articleJsondata  = "";
     private String resultdata = "";
     private ArticleListTask  mALTask = new ArticleListTask();
     private ArticlebaseHelper dbHelper;
+    private SwipeRefreshLayout mSwipeRefreshLayout;
+    private boolean mIsRefreshing=false;
     final   String LoginPath = "https://www.wanandroid.com/user/login";
     final   String ArticleListPath = "https://www.wanandroid.com/article/list/";
     private static boolean isLogin = false;
+    private int load_times = 0; //加载的次数，用于发送文章请求
+    private boolean isRefresh = false;
+    private boolean isloading = false;
 
 
     //处理返回结果的函数，系统提供的类方法  //handler处理返回数据
    Handler handler = new Handler(){//此函数是属于MainActivity.java所在线程的函数方法，所以可以直接调用MainActivity的 所有方法。
         public void handleMessage(Message msg) {
-            if (msg.what == 0x01) {   //
-                pageListData = new PageListData();
+            if (msg.what == 0x01) {
                 System.out.println("resultdata为"+resultdata);
-                JsonUtil.handleArtcileData(articleList, pageListData, resultdata);
-                pageListDataList.add(pageListData);//页码里面有几个对象，就代表文章列表有几页
-                resultdata = "";
+//                pageListData = new PageListData();
+//                JsonUtil.handleArtcileData(articleList, pageListData, resultdata);
+//                pageListDataList.add(pageListData);//页码里面有几个对象，就代表文章列表有几页
+//                resultdata = "";
             } else {
                 Toast.makeText(MainActivity.this, "请重新输入地址：", Toast.LENGTH_SHORT).show();
             }
@@ -74,11 +82,21 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_show_ariticle);
+        setContentView(R.layout.activity_main_ariticle);
         dbHelper = new ArticlebaseHelper(this,"Article.db",null,1);
         initViews();
         initArticleAdapter();
-        mALTask.execute(ArticleListPath);
+        isloading = true;
+        //mALTask.execute(ArticleListPath);
+        //若首次启动就加载刷新动画，使用SwipeRefreshLayout的post方法
+      mSwipeRefreshLayout.post(new Runnable() {
+            @Override
+            public void run() {
+                load_times = 0;
+                mSwipeRefreshLayout.setRefreshing(true);
+                new ArticleListTask().execute(ArticleListPath);
+            }
+        });
         checkStatus();
     }
 
@@ -96,6 +114,7 @@ public class MainActivity extends AppCompatActivity {
                 ContentValues values = new ContentValues();    //创建存放数据的ContentValues对象
                 values.put("title",articleList.get(position).getTitle());
                 db.insert("Article",null,values); //数据库执行插入命令
+                db.close();
                 Intent intent = new Intent(MainActivity.this,WebContentActivity.class);
                 intent.putExtra("url",articleList.get(position).getLink());
                 intent.putExtra("title",articleList.get(position).getTitle());
@@ -110,6 +129,7 @@ public class MainActivity extends AppCompatActivity {
                 ContentValues values = new ContentValues();    //创建存放数据的ContentValues对象
                 values.put("title",articleList.get(position).getTitle());
                 db.insert("Article",null,values); //数据库执行插入命令
+                db.close();
                 Intent intent = new Intent(MainActivity.this,WebContentActivity.class);
                 intent.putExtra("title",articleList.get(position).getTitle());
                 intent.putExtra("url",articleList.get(position).getLink());
@@ -125,14 +145,58 @@ public class MainActivity extends AppCompatActivity {
         if (actionBar != null){
             //使左上角图标是否显示，如果设成false，则没有程序图标，仅仅就个标题，否则，显示应用程序图标，对应id为android.R.id.home，对应ActionBar.DISPLAY_SHOW_HOME
             actionBar.setDisplayHomeAsUpEnabled(true);
-            actionBar.setHomeAsUpIndicator(R.drawable.user);
+            actionBar.setHomeAsUpIndicator(R.mipmap.user_32);
             //actionBar.setDisplayShowTitleEnabled(false); //隐藏标题栏的标题
         }
         mRecyclerView = (RecyclerView)findViewById(R.id.rv_item_article);
+//当刷新时设置,mIsRefreshing=true;刷新完毕后还原为false//mIsRefreshing=false;
+        mRecyclerView.setOnTouchListener(
+                new View.OnTouchListener() {
+                    @Override
+                    public boolean onTouch(View v, MotionEvent event) {
+                        if (mIsRefreshing) {
+                            return true;
+                        } else {
+                            return false;
+                        }
+                    }
+                }
+        );
+        //外部数据集和内部数据集不统一时会出现报错
+        final LinearLayoutManager linearLayoutManager = new RecyclerViewNoBugLinearLayoutManager(MainActivity.this,LinearLayoutManager.VERTICAL,false);
+        linearLayoutManager.setStackFromEnd(true);
+        mRecyclerView.setLayoutManager(linearLayoutManager);
+        mRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
+                super.onScrolled(recyclerView, dx, dy);
+                int endCompletelyPosition = linearLayoutManager.findLastVisibleItemPosition();
+                int totalItemCount = linearLayoutManager.getItemCount();
+                if(!isloading && totalItemCount < (endCompletelyPosition + 2 ) ) {
+                    System.out.println("执行上拉加载");
+                    isloading = true;
+                    new ArticleListTask().execute(ArticleListPath);
+                }
+            }
+        });
         //mRecyclerView.setItemViewCacheSize(500);//设置RecyclerView的缓存数量, 大了就不复用ViewHolder，直接全部新建，布局建多了卡是迟早的事
-        lineLayoutManager = new LinearLayoutManager(MainActivity.this);
-        lineLayoutManager.setOrientation(OrientationHelper.VERTICAL);
-        mRecyclerView.setLayoutManager(lineLayoutManager);
+
+        //下滑刷新
+        mSwipeRefreshLayout = (SwipeRefreshLayout) findViewById(R.id.swipe_refresh_layout_main); //下拉刷新布局
+        mSwipeRefreshLayout.setColorSchemeColors(Color.parseColor("#009a61"),Color.parseColor("#FF0000"));// green ,red
+        mSwipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+            @Override
+            public void onRefresh() {
+                isloading = false;
+                load_times = 0;
+                //下滑刷新，新开一个Task对象--重新请求网络数据
+                //mRecyclerView.removeAllViews();
+                for(int i = 0;i < articleAdapter.getItemCount();i++){
+                    articleAdapter.removeItem(i);
+                }
+                new ArticleListTask().execute(ArticleListPath);
+            }
+        });
         }
 
     /**
@@ -207,21 +271,24 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-    public class ArticleListTask extends AsyncTask<String,Integer,List<Article> > {
+    public class ArticleListTask extends AsyncTask<String,Integer,String> {
 
-        private ProgressDialog progressDialog;
+        private  List<Article> mArticleList = new ArrayList<>();
 
+//        private ProgressDialog progressDialog;
+//
         /**
          * 设置进度条对话框，缓解在处理数据过多时屏幕白屏的尴尬
          */
         @Override
         protected void onPreExecute() {
             super.onPreExecute();
-            progressDialog = new ProgressDialog(MainActivity.this);
-            progressDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
-            progressDialog.setMax(20);
-            progressDialog.setMessage("正在努力加载中");
-            progressDialog.show();
+//            progressDialog = new ProgressDialog(MainActivity.this);
+//            progressDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+//            progressDialog.setMax(20);
+//            progressDialog.setMessage("正在努力加载中");
+//            progressDialog.show();
+
         }
 
 
@@ -230,40 +297,67 @@ public class MainActivity extends AppCompatActivity {
          * @return  后台计算结果,返回給onPostExecute方法
          */
         @Override
-        protected List<Article> doInBackground(String... params) {
-            articleList.clear();
-            for (int i = 0; i < 10; i++) {
+        protected String doInBackground(String... params) {
+            //mArticleList.clear();
+            for (int i = 0; i < 1; i++) {
                 //初始化文章列表里面的数据
-                publishProgress(i);
+                //publishProgress(i);
+               if(isloading ) {
+                   i = load_times + i;//加载更多时，令i保持在最新要出来的一页
+               }
+                System.out.println("i的值为" + i);
+                System.out.println("load_times为"+ load_times);
                 resultdata =  GetUtil.sendGet(params[0] + i + "/json", articleJsondata, handler);
             }
-            return articleList;
-        }
+            //mArticleList.clear();
+            return resultdata;
+         }
 
-        /**
-         * 设置进度条
-         * @param values doInbackground方法传来的参数
-         */
-        @Override
-        protected void onProgressUpdate(Integer... values) {
-            super.onProgressUpdate(values);
-            progressDialog.setProgress(values[0]);
-        }
+//
+//        /**
+//         * 设置进度条
+//         * @param values doInbackground方法传来的参数
+//         */
+//        @Override
+//        protected void onProgressUpdate(Integer... values) {
+//            super.onProgressUpdate(values);
+//            progressDialog.setProgress(values[0]);
+//        }
 
 
         /**
          * 为Recycler的Adapter装填数据
-         * @param articleList  已有数据的文章列表，doInbackground方法返回的结果
+         * @param resultdata  已有数据的文章列表，doInbackground方法返回的结果
          */
         @Override
-        protected void onPostExecute(List<Article> articleList) {
-            progressDialog.dismiss();//数据处理完成，隐藏对话框
+        protected void onPostExecute(String resultdata) {
+//            progressDialog.dismiss();//数据处理完成，隐藏对话框
+            String resultJsondata = resultdata;
             System.out.println("正在执行onPostExecute方法");
-            super.onPostExecute(articleList);
+            super.onPostExecute(resultJsondata);
             mRecyclerView.setAdapter(articleAdapter);
-            articleAdapter.notifyDataSetChanged();//刷新Adapter数据
+            pageListData = new PageListData();
+            JsonUtil.handleArtcileData(mArticleList, pageListData, resultJsondata);
+//            articleAdapter.notifyDataSetChanged();//刷新Adapter数据
+            articleAdapter.notifyData(mArticleList);
+            pageListDataList.add(pageListData);//页码里面有几个对象，就代表文章列表有几页
+            resultJsondata = "";
+            //articleList，在外面的一些方法会调用到它
+            articleList.addAll(mArticleList);
+            mSwipeRefreshLayout.setRefreshing(false);//停止隐藏刷新动画
+            if(! isloading ) {
+                //下滑刷新的时候，定位回第一篇文章
+                mRecyclerView.scrollToPosition(0);
+            }else{
+                load_times++;//加载次数+1
+                isloading = false;
+                //上拉刷新后，定位到加载出来的位置附近
+                mRecyclerView.scrollToPosition(articleAdapter.getItemCount() - 18);
+            }
         }
     }
+
+
 
 
     /**

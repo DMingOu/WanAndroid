@@ -7,16 +7,17 @@ import android.graphics.Color;
 import android.support.v7.widget.CardView;
 import android.support.v7.widget.RecyclerView;
 import android.text.Html;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.example.odm.wanandroid.Db.ArticlebaseHelper;
 import com.example.odm.wanandroid.R;
 import com.example.odm.wanandroid.bean.Article;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -24,7 +25,7 @@ import java.util.List;
  * Created by ODM on 2019/5/4.
  */
 
-public class ArticleAdapter extends RecyclerView.Adapter<ArticleAdapter.ItemArticleViewHolder>  {
+public class ArticleAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>  {
 
     private List<Article> mArticleList;
     private Context mContext;
@@ -37,6 +38,9 @@ public class ArticleAdapter extends RecyclerView.Adapter<ArticleAdapter.ItemArti
     }
 
     private ArticlebaseHelper  dbhelper;
+    private List<Article> articleList = new ArrayList<>();
+
+    public static final int ITEM_TYPE_FOOTER = 0; //是否到达底部的状态量
 
     public  static  class ItemArticleViewHolder extends RecyclerView.ViewHolder{
         private CardView mItemArcticleCV;
@@ -57,70 +61,147 @@ public class ArticleAdapter extends RecyclerView.Adapter<ArticleAdapter.ItemArti
 
     }
 
+    /**
+     * 底部加载布局Holder
+     */
+    public class FooterViewHolder extends RecyclerView.ViewHolder {
+        private ProgressBar mLoadPb;
+        private TextView mLoadTv;
+
+        public FooterViewHolder(View view){
+            super(view);
+            mLoadPb = (ProgressBar) view.findViewById(R.id.pb_loading);
+            mLoadTv = (TextView)view.findViewById(R.id.tv_loading);
+        }
+    }
+
     //将文章item的布局加载进ViewHolder中
     @Override
-    public ItemArticleViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+    public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         if(mContext == null){
             mContext = parent.getContext();
         }
+        //如果达到最后一个item就加载 "加载更多" 这个view
+        if(viewType == ITEM_TYPE_FOOTER) {
+            View view = LayoutInflater.from(mContext).inflate(R.layout.item_footer_loadingmore,parent,false);
+            return new FooterViewHolder(view);
+        } else {
         View view = LayoutInflater.from(mContext).inflate(R.layout.item_article, parent ,false);
         dbhelper =  new ArticlebaseHelper(mContext,"Article.db",null,1);
         return new ItemArticleViewHolder(view);
+     }
     }
 
     @Override
-    public void onBindViewHolder(final ItemArticleViewHolder holder, int position) {
-        final Article article = mArticleList.get(position);
-        holder.mTitleTv.setText(Html.fromHtml(article.getTitle()));
-        SQLiteDatabase db = dbhelper.getReadableDatabase();
-        //查询Article表对象，创建游标对象
-        Cursor cursor = db.query("Article", new String[] {"title"}, null, null, null, null, null);
-        if (cursor.moveToFirst()) {
-            do {
-                String title = cursor.getString(cursor.getColumnIndex("title"));
-                if (article.getTitle().equals(title)) {
-                    Log.e("Articletitle",article.getTitle());
-                    holder.mTitleTv.setTextColor(Color.parseColor("#999999"));
-                    break;
-                } else {
-                    holder.mTitleTv.setTextColor(Color.parseColor("#000000"));
-                }
-            } while (cursor.moveToNext());
+    public void onBindViewHolder(final RecyclerView.ViewHolder holder, int position){
+        //传进来的是底部加载的holder
+        if(holder instanceof  FooterViewHolder){
+            ((FooterViewHolder) holder).mLoadTv.setText("正在加载中");
+            System.out.println("holder上拉加载");
+            return;
         }
-        cursor.close();
-        //若文章已有被点击属性，则被设为灰色已读
-        holder.mTimeTv.setText(article.getNiceDate());
-        holder.mSuperChapterNameTv.setText(article.getSuperChapterName());
-        holder.mAuthorTv.setText("作者:" + article.getAuthor());
-        //设置Tag方便进行点击事件数据的处理
-        holder.mItemArcticleCV.setTag(position);
-        holder.itemView.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                //int position = holder.getLayoutPosition();
-                article.setClicked(true);
-                holder.mTitleTv.setTextColor(Color.parseColor("#999999"));//灰色
-                if (onArticleItemClickListener != null) {
-                //注意这里使用getTag方法获取数据
-                onArticleItemClickListener.onArticleItemClick(view, (Integer) view.getTag());
-                }
+        if (holder instanceof ItemArticleViewHolder) {
+            ItemArticleViewHolder newHolder = (ItemArticleViewHolder) holder;
+            final Article article = mArticleList.get(position);
+            newHolder.mTitleTv.setText(Html.fromHtml(article.getTitle()));
+            SQLiteDatabase db = dbhelper.getReadableDatabase();
+            //查询Article表对象，创建游标对象
+            Cursor cursor = db.query("Article", new String[]{"title"}, null, null, null, null, null);
+            if (cursor.moveToFirst()) {
+                do {
+                    String title = cursor.getString(cursor.getColumnIndex("title"));
+                    if (article.getTitle().equals(title)) {
+                        newHolder.mTitleTv.setTextColor(Color.parseColor("#999999"));
+                        break;
+                    } else {
+                        newHolder.mTitleTv.setTextColor(Color.parseColor("#000000"));
+                    }
+                } while (cursor.moveToNext());
             }
-        });
-        holder.itemView.setOnLongClickListener(new View.OnLongClickListener(){
-            @Override
-            public boolean onLongClick(View v) {
-                article.setClicked(true);
-                holder.mTitleTv.setTextColor(Color.parseColor("#999999"));
-                return onArticleItemLongClickListener != null && onArticleItemLongClickListener.onArticleItemLongClick(v, (Integer) v.getTag());
-             }
-        });
+            cursor.close();
+            db.close();
+            newHolder.mTimeTv.setText(article.getNiceDate());
+            //某些文章的类别为空，我设置属于它为个人开发者
+            if (article.getSuperChapterName().equals("")) {
+                article.setSuperChapterName("个人开发者");
+            }
+            newHolder.mSuperChapterNameTv.setText(article.getSuperChapterName());
+            newHolder.mAuthorTv.setText("作者:" + article.getAuthor());
+            //设置Tag方便进行点击事件数据的处理
+            newHolder.mItemArcticleCV.setTag(position);
+
+            //若文章已有被点击属性，则被设为灰色已读
+            holder.itemView.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    //int position = holder.getLayoutPosition();
+                    article.setClicked(true);
+                    if (holder instanceof ItemArticleViewHolder) {
+                        ItemArticleViewHolder newHolder = (ItemArticleViewHolder) holder;
+                        newHolder.mTitleTv.setTextColor(Color.parseColor("#999999"));//灰色
+                    }
+                    if (onArticleItemClickListener != null) {
+                        //注意这里使用getTag方法获取数据
+                        onArticleItemClickListener.onArticleItemClick(view, (Integer) view.getTag());
+                    }
+                }
+            });
+            holder.itemView.setOnLongClickListener(new View.OnLongClickListener() {
+                @Override
+                public boolean onLongClick(View v) {
+                    article.setClicked(true);
+                    if (holder instanceof ItemArticleViewHolder) {
+                        ItemArticleViewHolder newHolder = (ItemArticleViewHolder) holder;
+                        newHolder.mTitleTv.setTextColor(Color.parseColor("#999999"));
+                    }
+                    return onArticleItemLongClickListener != null && onArticleItemLongClickListener.onArticleItemLongClick(v, (Integer) v.getTag());
+                }
+            });
+        }
+    }
+
+    /**
+     * 刷新adpter的数据，防止数据源与内部数据冲突
+     * @param articleList_new
+     */
+    public void notifyData(List<Article> articleList_new) {
+        if (articleList_new != null) {
+            int previousSize = articleList.size();
+            articleList.clear();
+            notifyItemRangeRemoved(0, previousSize);
+            articleList.addAll(articleList_new);
+            notifyItemRangeInserted(0, articleList_new.size());
+        }
+    }
+
+    /**
+     * 上滑到最后的item时返回0，否则返回1
+     * @param position
+     * @return
+     */
+    @Override
+    public int getItemViewType(int position) {
+       if (position == getItemCount()-1 ){
+            return ITEM_TYPE_FOOTER;
+        }else {
+            return 1;
+        }
     }
 
     @Override
     public int getItemCount() {
-        return mArticleList.size();
+        return mArticleList.size() ;
     }
 
+    /**
+     * 删除RecycleView某项item
+     * @param position
+     */
+    public void removeItem(int position){
+        mArticleList.remove(position);//删除数据源,移除集合中当前下标的数据
+        notifyItemRemoved(position);//刷新被删除的地方
+        notifyItemRangeChanged(position,getItemCount()); //刷新被删除数据，以及其后面的数据
+    }
 
     /*设置点击事件监视*/
     public void setRecyclerViewOnItemClickListener(ArticleRecyclerViewOnItemClickListener onArticleItemClickListener) {
