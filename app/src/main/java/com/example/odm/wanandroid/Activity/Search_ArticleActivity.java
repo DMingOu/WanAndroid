@@ -10,32 +10,31 @@ import android.os.Handler;
 import android.os.Message;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
-import android.support.v7.widget.OrientationHelper;
 import android.support.v7.widget.RecyclerView;
 import android.view.KeyEvent;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
-import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.odm.wanandroid.Adapter.ArticleAdapter;
 import com.example.odm.wanandroid.Db.ArticlebaseHelper;
 import com.example.odm.wanandroid.R;
+import com.example.odm.wanandroid.RecyclerViewNoBugLinearLayoutManager;
 import com.example.odm.wanandroid.Util.JsonUtil;
 import com.example.odm.wanandroid.Util.PostUtil;
 import com.example.odm.wanandroid.bean.Article;
 import com.example.odm.wanandroid.bean.PageListData;
+
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.List;
 
 public class Search_ArticleActivity extends AppCompatActivity {
-
-    private ImageView  mBackIv; //返回键图片控件
     private EditText  mSearchEt; //搜索内容编辑框
     private Context mContext;
     private List<Article> articleList = new ArrayList<>();
@@ -49,6 +48,11 @@ public class Search_ArticleActivity extends AppCompatActivity {
     private ArticlebaseHelper dbHelper;
     private String keyword;//搜索关键词
     private PostUtil postUtil;//Post工具类
+    private boolean isRefresh = false;
+    private boolean mIsRefreshing=false;
+    private boolean isloading  = false;
+    private  static boolean isHasMore = false;
+    private int load_times = 0; //加载的次数，用于发送文章请求
     final String SearchPath = "https://www.wanandroid.com/article/query/";
 
     Handler handler = new Handler(){//此函数是属于MainActivity.java所在线程的函数方法，所以可以直接调用MainActivity的 所有方法。
@@ -56,7 +60,7 @@ public class Search_ArticleActivity extends AppCompatActivity {
             if (msg.what == 0x01) {   //
                 pageListData = new PageListData();
                 System.out.println("resultdata为"+resultdata);
-                JsonUtil.handleArtcileData(articleList, pageListData, resultdata);
+                JsonUtil.handleArtcileData(articleList, pageListData, resultdata,isRefresh);
                 pageListDataList.add(pageListData);//页码里面有几个对象，就代表文章列表有几页
                 resultdata = "";
             } else {
@@ -78,20 +82,42 @@ public class Search_ArticleActivity extends AppCompatActivity {
      *初始化控件
      */
     protected  void initViews(){
-        mBackIv = (ImageView)findViewById(R.id.iv_back);
         mSearchEt  = (EditText)findViewById(R.id.et_search);
         mRecyclerView = (RecyclerView)findViewById(R.id.rv_article_search);
-        lineLayoutManager = new LinearLayoutManager(Search_ArticleActivity.this);
-        lineLayoutManager.setOrientation(OrientationHelper.VERTICAL);
-        mRecyclerView.setLayoutManager(lineLayoutManager);
+        final LinearLayoutManager linearLayoutManager = new RecyclerViewNoBugLinearLayoutManager(Search_ArticleActivity.this,LinearLayoutManager.VERTICAL,false);
+        linearLayoutManager.setStackFromEnd(true);
+        mRecyclerView.setLayoutManager(linearLayoutManager);
         postUtil = new PostUtil();
-        //点击事件--返回上一个页面
-        mBackIv.setOnClickListener(new View.OnClickListener() {
+        mRecyclerView.setLayoutManager(linearLayoutManager);
+        //监听用户是否有上滑加载的操作
+        mRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
-            public void onClick(View v) {
-                finish();
+            public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
+                super.onScrolled(recyclerView, dx, dy);
+                int endCompletelyPosition = linearLayoutManager.findLastVisibleItemPosition();
+                int totalItemCount = linearLayoutManager.getItemCount();
+                if(!isloading && totalItemCount < (endCompletelyPosition + 2 ) ) {
+                    if(isHasMore) {
+                        isloading = true;
+                        isRefresh = false;
+                        new Search_ArticleActivity.ArticleList_SearchTask().execute(SearchPath);
+                 }
+                }
             }
         });
+        mRecyclerView.setOnTouchListener(
+                new View.OnTouchListener() {
+                    @Override
+                    public boolean onTouch(View v, MotionEvent event) {
+                        if (mIsRefreshing) {
+                            return true;
+                        } else {
+                            return false;
+                        }
+                    }
+                }
+        );
+
         //监听软键盘的输入
         mSearchEt.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
@@ -101,6 +127,7 @@ public class Search_ArticleActivity extends AppCompatActivity {
                     hideKeyboard(mSearchEt);
                     // 在这里写搜索的操作,一般都是网络请求数据
                     keyword  = mSearchEt.getText().toString();
+                    load_times = 0; //每次点击搜索键重置加载次数为0，展示第一页搜索的数据
                     new ArticleList_SearchTask().execute(SearchPath);
                     return true;
                 }
@@ -145,57 +172,86 @@ public class Search_ArticleActivity extends AppCompatActivity {
         } );
     }
 
-    public class ArticleList_SearchTask extends AsyncTask<String,Integer,List<Article> > {
+    public class ArticleList_SearchTask extends AsyncTask<String,Integer,String > {
 
+        private  List<Article> mArticleList = new ArrayList<>();
 
         /**
          * @param params  启动任务执行的输入参数 params[0]
          * @return  后台计算结果,返回給onPostExecute方法
          */
         @Override
-        protected List<Article> doInBackground(String... params) {
+        protected String doInBackground(String... params) {
             articleList.clear();
             try {
 
                 for (int i = 0; i < 1; i++) {
                     //初始化文章列表里面的数据
                     //publishProgress(i);
+                    if(isloading && isHasMore ) {
+                        i = load_times + i;//加载更多时，令i保持在最新要出来的一页
+                    }
                     String  keywordString= "k="+URLEncoder.encode(keyword,"UTF-8");
                     resultdata = postUtil.sendPost(params[0]+i+"/json",keywordString);
-                    pageListData = new PageListData();
-                    System.out.println("resultdata为"+resultdata);
-                    JsonUtil.handleArtcileData(articleList, pageListData, resultdata);
-                    pageListDataList.add(pageListData);//页码里面有几个对象，就代表文章列表有几页
-                    resultdata = "";
 
                 }
             } catch (UnsupportedEncodingException e) {
                 e.printStackTrace();
             }
 
-            return articleList;
+            return resultdata;
         }
 
 
         /**
          * 为Recycler的Adapter装填数据
-         * @param articleList  文章列表数据，doInbackground方法返回的结果
+         * @param resultdata  文章列表数据，doInbackground方法返回的结果
          */
         @Override
-        protected void onPostExecute(List<Article> articleList) {
-            System.out.println("正在执行onPostExecute方法");
-            super.onPostExecute(articleList);
-            if (articleList.size() == 0) {
-                Toast.makeText(Search_ArticleActivity.this, "抱歉没有这方面的内容", Toast.LENGTH_SHORT).show();
-            } else {
-                mRecyclerView.setAdapter(articleAdapter);
-                articleAdapter.notifyDataSetChanged();//刷新Adapter数据
+        protected void onPostExecute(String resultdata) {
+            super.onPostExecute(resultdata);
+            mRecyclerView.setAdapter(articleAdapter);
+            pageListData = new PageListData();
+            JsonUtil.handleArtcileData(mArticleList, pageListData, resultdata,isRefresh);
+            //articleAdapter.notifyData(mArticleList);
+
+            pageListDataList.add(pageListData);//页码里面有几个对象，就代表文章列表有几页
+            resultdata = "";
+            articleList.addAll(mArticleList);
+            articleAdapter.notifyDataSetChanged();//刷新Adapter数据
+            //articleAdapter.notifyItemRangeChanged(0,articleAdapter.getItemCount());
+            if (mArticleList.size() == 0) {
+                Toast.makeText(Search_ArticleActivity.this, "抱歉没有这方面的内容", Toast.LENGTH_LONG).show();
+            }else {
+                //如果加载出来的列表小于正常一页的数量20，说明已经加载完毕了
+                if (mArticleList.size() <  20 && mArticleList.size() > 0){
+                    isHasMore = false;
+                    load_times = 0; //重置了加载次数，让用户搜索关键词可以从第一页开始
+                } else {
+                    isHasMore = true; //加载这一页有20篇文章，说明可能还会有下一页
+                }
+                if(! isloading && isRefresh ) {
+                    isRefresh = false;
+                    isloading = false;
+                }else{
+                    //上拉加载后
+                    load_times++;//加载次数+1
+                    isRefresh = false;
+                    isloading = false;
+                    //上拉加载后，定位到加载出来的位置附近。每一页都有20篇文章
+                    mRecyclerView.scrollToPosition(articleAdapter.getItemCount() - 18);
+                }
             }
         }
     }
 
 
-
+    public static boolean getStatus_isHasMore(){
+        return isHasMore;
+    }
+    public static void setStatus_isHasMore( boolean bool) {
+        isHasMore = bool;
+    }
 
     /**
      * 隐藏软键盘

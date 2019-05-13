@@ -1,5 +1,6 @@
 package com.example.odm.wanandroid.Adapter;
 
+import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
@@ -13,6 +14,7 @@ import android.view.ViewGroup;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import com.example.odm.wanandroid.Activity.Search_ArticleActivity;
 import com.example.odm.wanandroid.Db.ArticlebaseHelper;
 import com.example.odm.wanandroid.R;
 import com.example.odm.wanandroid.bean.Article;
@@ -62,7 +64,7 @@ public class ArticleAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
     }
 
     /**
-     * 底部加载布局Holder
+     * 底部加载布局Holder--加载更多
      */
     public class FooterViewHolder extends RecyclerView.ViewHolder {
         private ProgressBar mLoadPb;
@@ -75,6 +77,17 @@ public class ArticleAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         }
     }
 
+    /**
+     * 底部加载布局Holder--没有更多
+     */
+    public class FooterViewHolder_NoMore extends RecyclerView.ViewHolder {
+        private TextView mLoadTv_nomore;
+        private  FooterViewHolder_NoMore(View view) {
+            super(view);
+            mLoadTv_nomore = (TextView) view.findViewById(R.id.tv_loading_nomore);
+        }
+    }
+
     //将文章item的布局加载进ViewHolder中
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
@@ -83,6 +96,11 @@ public class ArticleAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         }
         //如果达到最后一个item就加载 "加载更多" 这个view
         if(viewType == ITEM_TYPE_FOOTER) {
+            //如果没有更多了，就加载 "没有更多" 这个view
+            if(! Search_ArticleActivity.getStatus_isHasMore()){
+                View view = LayoutInflater.from(mContext).inflate(R.layout.item_footer_loading_nomore,parent,false);
+                return new FooterViewHolder_NoMore(view);
+            }
             View view = LayoutInflater.from(mContext).inflate(R.layout.item_footer_loadingmore,parent,false);
             return new FooterViewHolder(view);
         } else {
@@ -97,7 +115,10 @@ public class ArticleAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         //传进来的是底部加载的holder
         if(holder instanceof  FooterViewHolder){
             ((FooterViewHolder) holder).mLoadTv.setText("正在加载中");
-            System.out.println("holder上拉加载");
+            return;
+        }
+        if(holder instanceof  FooterViewHolder_NoMore) {
+            ((FooterViewHolder_NoMore) holder).mLoadTv_nomore.setText("没有更多数据了");
             return;
         }
         if (holder instanceof ItemArticleViewHolder) {
@@ -110,7 +131,7 @@ public class ArticleAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             if (cursor.moveToFirst()) {
                 do {
                     String title = cursor.getString(cursor.getColumnIndex("title"));
-                    if (article.getTitle().equals(title)) {
+                    if (article.getTitle().equals(title)) { //数据库有相同的标题（读过的)，设置为灰色，否则设置为黑色
                         newHolder.mTitleTv.setTextColor(Color.parseColor("#999999"));
                         break;
                     } else {
@@ -118,6 +139,9 @@ public class ArticleAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                     }
                 } while (cursor.moveToNext());
             }
+            ContentValues values = new ContentValues();    //创建存放数据的ContentValues对象
+            values.put("id",mArticleList.get(position).getId()); //存储RecycleView即将显示出来的文章的id
+            db.insert("Article",null,values); //数据库执行插入命令
             cursor.close();
             db.close();
             newHolder.mTimeTv.setText(article.getNiceDate());
@@ -161,7 +185,7 @@ public class ArticleAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
     }
 
     /**
-     * 刷新adpter的数据，防止数据源与内部数据冲突
+     * 刷新adpter的数据，防止数据源与内部数据大小冲突
      * @param articleList_new
      */
     public void notifyData(List<Article> articleList_new) {
@@ -201,6 +225,15 @@ public class ArticleAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         mArticleList.remove(position);//删除数据源,移除集合中当前下标的数据
         notifyItemRemoved(position);//刷新被删除的地方
         notifyItemRangeChanged(position,getItemCount()); //刷新被删除数据，以及其后面的数据
+    }
+
+    /**
+     * 删除RecycleView从第一项到最后一项
+     */
+    public void removeAllItem () {
+        notifyItemRangeRemoved(0,getItemCount());
+        articleList.clear();
+        notifyItemRangeChanged(0, articleList.size());
     }
 
     /*设置点击事件监视*/

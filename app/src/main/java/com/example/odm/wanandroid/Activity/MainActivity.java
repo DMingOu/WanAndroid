@@ -84,6 +84,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main_ariticle);
         dbHelper = new ArticlebaseHelper(this,"Article.db",null,1);
+        Search_ArticleActivity.setStatus_isHasMore(true); //为了在主界面不受搜索界面的是否还能加载影响
         initViews();
         initArticleAdapter();
         isloading = true;
@@ -149,7 +150,27 @@ public class MainActivity extends AppCompatActivity {
             //actionBar.setDisplayShowTitleEnabled(false); //隐藏标题栏的标题
         }
         mRecyclerView = (RecyclerView)findViewById(R.id.rv_item_article);
-//当刷新时设置,mIsRefreshing=true;刷新完毕后还原为false//mIsRefreshing=false;
+
+        //外部数据集和内部数据集不统一时会出现报错
+        final LinearLayoutManager linearLayoutManager = new RecyclerViewNoBugLinearLayoutManager(MainActivity.this,LinearLayoutManager.VERTICAL,false);
+        linearLayoutManager.setStackFromEnd(true);
+        mRecyclerView.setLayoutManager(linearLayoutManager);
+        //监听用户是否有上滑加载的操作
+        mRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
+                super.onScrolled(recyclerView, dx, dy);
+                int endCompletelyPosition = linearLayoutManager.findLastVisibleItemPosition();
+                int totalItemCount = linearLayoutManager.getItemCount();
+                if(!isloading && totalItemCount < (endCompletelyPosition + 2 ) ) {
+                    isloading = true;
+                    isRefresh = false;
+                    new ArticleListTask().execute(ArticleListPath);
+                }
+            }
+        });
+        //mRecyclerView.setItemViewCacheSize(500);//设置RecyclerView的缓存数量, 大了就不复用ViewHolder，直接全部新建，布局建多了卡是迟早的事
+        //当刷新时设置,mIsRefreshing=true;刷新完毕后还原为false//mIsRefreshing=false;
         mRecyclerView.setOnTouchListener(
                 new View.OnTouchListener() {
                     @Override
@@ -162,38 +183,16 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }
         );
-        //外部数据集和内部数据集不统一时会出现报错
-        final LinearLayoutManager linearLayoutManager = new RecyclerViewNoBugLinearLayoutManager(MainActivity.this,LinearLayoutManager.VERTICAL,false);
-        linearLayoutManager.setStackFromEnd(true);
-        mRecyclerView.setLayoutManager(linearLayoutManager);
-        mRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
-            @Override
-            public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
-                super.onScrolled(recyclerView, dx, dy);
-                int endCompletelyPosition = linearLayoutManager.findLastVisibleItemPosition();
-                int totalItemCount = linearLayoutManager.getItemCount();
-                if(!isloading && totalItemCount < (endCompletelyPosition + 2 ) ) {
-                    System.out.println("执行上拉加载");
-                    isloading = true;
-                    new ArticleListTask().execute(ArticleListPath);
-                }
-            }
-        });
-        //mRecyclerView.setItemViewCacheSize(500);//设置RecyclerView的缓存数量, 大了就不复用ViewHolder，直接全部新建，布局建多了卡是迟早的事
-
         //下滑刷新
         mSwipeRefreshLayout = (SwipeRefreshLayout) findViewById(R.id.swipe_refresh_layout_main); //下拉刷新布局
         mSwipeRefreshLayout.setColorSchemeColors(Color.parseColor("#009a61"),Color.parseColor("#FF0000"));// green ,red
         mSwipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             @Override
             public void onRefresh() {
-                isloading = false;
                 load_times = 0;
                 //下滑刷新，新开一个Task对象--重新请求网络数据
-                //mRecyclerView.removeAllViews();
-                for(int i = 0;i < articleAdapter.getItemCount();i++){
-                    articleAdapter.removeItem(i);
-                }
+                isloading = false;
+                isRefresh = true;
                 new ArticleListTask().execute(ArticleListPath);
             }
         });
@@ -288,7 +287,6 @@ public class MainActivity extends AppCompatActivity {
 //            progressDialog.setMax(20);
 //            progressDialog.setMessage("正在努力加载中");
 //            progressDialog.show();
-
         }
 
 
@@ -305,8 +303,6 @@ public class MainActivity extends AppCompatActivity {
                if(isloading ) {
                    i = load_times + i;//加载更多时，令i保持在最新要出来的一页
                }
-                System.out.println("i的值为" + i);
-                System.out.println("load_times为"+ load_times);
                 resultdata =  GetUtil.sendGet(params[0] + i + "/json", articleJsondata, handler);
             }
             //mArticleList.clear();
@@ -327,7 +323,7 @@ public class MainActivity extends AppCompatActivity {
 
         /**
          * 为Recycler的Adapter装填数据
-         * @param resultdata  已有数据的文章列表，doInbackground方法返回的结果
+         * @param resultdata  关于文章列表的JSON数据，doInbackground方法返回的结果
          */
         @Override
         protected void onPostExecute(String resultdata) {
@@ -337,21 +333,31 @@ public class MainActivity extends AppCompatActivity {
             super.onPostExecute(resultJsondata);
             mRecyclerView.setAdapter(articleAdapter);
             pageListData = new PageListData();
-            JsonUtil.handleArtcileData(mArticleList, pageListData, resultJsondata);
+            JsonUtil.handleArtcileData(mArticleList, pageListData, resultJsondata,isRefresh);
 //            articleAdapter.notifyDataSetChanged();//刷新Adapter数据
             articleAdapter.notifyData(mArticleList);
             pageListDataList.add(pageListData);//页码里面有几个对象，就代表文章列表有几页
             resultJsondata = "";
             //articleList，在外面的一些方法会调用到它
             articleList.addAll(mArticleList);
-            mSwipeRefreshLayout.setRefreshing(false);//停止隐藏刷新动画
-            if(! isloading ) {
-                //下滑刷新的时候，定位回第一篇文章
+            //如果文章数组小于固定数量20说明已经出现过的文章被过滤掉，List里面这部分都是新的文章，需要从列表末尾调回顶部
+            if(mArticleList.size() < 20 && mArticleList.size() > 0) {
+                for(int i = mArticleList.size() ; i >= 1; i-- )
+                articleAdapter.notifyItemMoved(articleAdapter.getItemCount(),0);
+                articleAdapter.notifyItemRangeChanged(0,articleAdapter.getItemCount()); //刷新位置，防止数据的位置紊乱
+            }
+            mSwipeRefreshLayout.setRefreshing(false);//停止刷新动画
+            if(! isloading && isRefresh ) {
+                //下滑刷新后定位回第一篇文章
                 mRecyclerView.scrollToPosition(0);
-            }else{
-                load_times++;//加载次数+1
+                isRefresh = false;
                 isloading = false;
-                //上拉刷新后，定位到加载出来的位置附近
+            }else{
+                //上拉加载后
+                load_times++;//加载次数+1
+                isRefresh = false;
+                isloading = false;
+                //上拉加载后，定位到加载出来的位置附近。每一页都有20篇文章
                 mRecyclerView.scrollToPosition(articleAdapter.getItemCount() - 18);
             }
         }
@@ -397,8 +403,6 @@ public class MainActivity extends AppCompatActivity {
         }
         return true;
     }
-
-
 }
 
 

@@ -1,18 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical" android:layout_width="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
     android:layout_height="match_parent">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal">
-    <ImageView
-        android:id = "@+id/iv_back"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-
-        android:background="@mipmap/ic_back_16"/>
 
         <EditText
             android:id="@+id/et_search"
@@ -20,18 +16,18 @@
             android:layout_width="match_parent"
             android:layout_height="43sp"
             android:textSize="18sp"
-            android:layout_marginStart="3dp"
-
+            android:layout_marginStart="0dp"
             android:imeOptions="actionSearch"
             android:maxLines="1"
             android:singleLine="true"
             android:gravity="center"
             android:hint="搜索文章关键词"/>
     </LinearLayout>
+
+
     <android.support.v7.widget.RecyclerView
         android:id="@+id/rv_article_search"
         android:layout_height="wrap_content"
         android:layout_width="match_parent"
         />
-
 </LinearLayout>
