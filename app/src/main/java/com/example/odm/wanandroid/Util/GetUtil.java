@@ -1,6 +1,5 @@
 package com.example.odm.wanandroid.Util;
 
-import android.os.Handler;
 import android.util.Log;
 
 import java.io.BufferedReader;
@@ -21,10 +20,9 @@ public class GetUtil {
     /**
      * @param Path  进行GET请求的接口字符串
      * @param resultdata  用来接收JSON数据的字符串
-     * @param handler     与主线程通信的handler
      * @return resultdata 返回接收到JSON数据的字符串
      */
-    public  static  String  sendGet( String Path , String resultdata ,  Handler handler){
+    public  static  String  sendGet( String Path , String resultdata ){
 
                 HttpURLConnection connection;
                 try {
@@ -44,7 +42,7 @@ public class GetUtil {
                         }
                         Log.e("resultdata",resultdata);
                         if (resultdata == null) System.out.println("接收数据一开始就为空了QAQ");
-                        handler.sendEmptyMessage(0x01);  //请求完毕，返回自己自定义的信息 id，与主线程通知，开启下一步操作
+                        //handler.sendEmptyMessage(0x01);  //请求完毕，返回自己自定义的信息 id，与主线程通知，开启下一步操作
                     }
                 } catch (MalformedURLException e) {
                     e.printStackTrace();

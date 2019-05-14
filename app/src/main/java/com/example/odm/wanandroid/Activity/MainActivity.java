@@ -31,48 +31,42 @@ import com.example.odm.wanandroid.Util.GetUtil;
 import com.example.odm.wanandroid.Util.JsonUtil;
 import com.example.odm.wanandroid.Util.PostUtil;
 import com.example.odm.wanandroid.Util.SharedPreferencesUtil;
+import com.example.odm.wanandroid.base.BaseUrl;
 import com.example.odm.wanandroid.bean.Article;
 import com.example.odm.wanandroid.bean.PageListData;
 import com.example.odm.wanandroid.bean.User;
 
 import java.io.UnsupportedEncodingException;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
-   // private DrawerLayout mDrawerLayout;
     private User user;
     private List<Article> articleList = new ArrayList<>();
     private List<PageListData> pageListDataList = new ArrayList<>();
     private ArticleAdapter articleAdapter;
     private RecyclerView mRecyclerView;
-//    private LinearLayoutManager lineLayoutManager;
-    private RecyclerViewNoBugLinearLayoutManager  RVlinelayoutManager;
     private PageListData pageListData;
     private String articleJsondata  = "";
     private String resultdata = "";
-    private ArticleListTask  mALTask = new ArticleListTask();
     private ArticlebaseHelper dbHelper;
     private SwipeRefreshLayout mSwipeRefreshLayout;
     private boolean mIsRefreshing=false;
-    final   String LoginPath = "https://www.wanandroid.com/user/login";
-    final   String ArticleListPath = "https://www.wanandroid.com/article/list/";
     private static boolean isLogin = false;
-    private int load_times = 0; //加载的次数，用于发送文章请求
+    private int load_times = 0; //加载的次数，被用于发送文章请求，控制页码
     private boolean isRefresh = false;
     private boolean isloading = false;
-
-
-    //处理返回结果的函数，系统提供的类方法  //handler处理返回数据
+    private static boolean  isHasMore_AtricleList = true;
+    private final  int ARTICLECOUNT_ONEPAGE = 20; //从网页请求的数据，以页为单位，一页的文章的数量为20
+    //处理返回结果的函数，系统提供的类方法
    Handler handler = new Handler(){//此函数是属于MainActivity.java所在线程的函数方法，所以可以直接调用MainActivity的 所有方法。
         public void handleMessage(Message msg) {
             if (msg.what == 0x01) {
-                System.out.println("resultdata为"+resultdata);
-//                pageListData = new PageListData();
-//                JsonUtil.handleArtcileData(articleList, pageListData, resultdata);
-//                pageListDataList.add(pageListData);//页码里面有几个对象，就代表文章列表有几页
-//                resultdata = "";
+                //System.out.println("resultdata为"+resultdata);
             } else {
                 Toast.makeText(MainActivity.this, "请重新输入地址：", Toast.LENGTH_SHORT).show();
             }
@@ -84,21 +78,27 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main_ariticle);
         dbHelper = new ArticlebaseHelper(this,"Article.db",null,1);
-        Search_ArticleActivity.setStatus_isHasMore(true); //为了在主界面不受搜索界面的是否还能加载影响
+
         initViews();
         initArticleAdapter();
         isloading = true;
-        //mALTask.execute(ArticleListPath);
         //若首次启动就加载刷新动画，使用SwipeRefreshLayout的post方法
-      mSwipeRefreshLayout.post(new Runnable() {
+        mSwipeRefreshLayout.post(new Runnable() {
             @Override
             public void run() {
                 load_times = 0;
                 mSwipeRefreshLayout.setRefreshing(true);
-                new ArticleListTask().execute(ArticleListPath);
+                new ArticleListTask().execute(BaseUrl.getArticleListPath());
             }
         });
-        checkStatus();
+        checkStatus(); //检查登录状态
+        closeAndroidPDialog();//关闭警告弹窗
+    }
+
+    @Override
+    protected void onStart() {
+        super.onRestart();
+        Search_ArticleActivity.setStatus_isHasMore(true); //为了在主界面不受搜索界面的是否还能加载影响
     }
 
     /**
@@ -110,7 +110,6 @@ public class MainActivity extends AppCompatActivity {
         articleAdapter.setRecyclerViewOnItemClickListener(new ArticleAdapter.ArticleRecyclerViewOnItemClickListener() {
             @Override
             public void onArticleItemClick(View view, int position) {
-                System.out.println("onArticleItemClick方法");
                 SQLiteDatabase db = dbHelper.getWritableDatabase();
                 ContentValues values = new ContentValues();    //创建存放数据的ContentValues对象
                 values.put("title",articleList.get(position).getTitle());
@@ -147,7 +146,6 @@ public class MainActivity extends AppCompatActivity {
             //使左上角图标是否显示，如果设成false，则没有程序图标，仅仅就个标题，否则，显示应用程序图标，对应id为android.R.id.home，对应ActionBar.DISPLAY_SHOW_HOME
             actionBar.setDisplayHomeAsUpEnabled(true);
             actionBar.setHomeAsUpIndicator(R.mipmap.user_32);
-            //actionBar.setDisplayShowTitleEnabled(false); //隐藏标题栏的标题
         }
         mRecyclerView = (RecyclerView)findViewById(R.id.rv_item_article);
 
@@ -165,7 +163,7 @@ public class MainActivity extends AppCompatActivity {
                 if(!isloading && totalItemCount < (endCompletelyPosition + 2 ) ) {
                     isloading = true;
                     isRefresh = false;
-                    new ArticleListTask().execute(ArticleListPath);
+                    new ArticleListTask().execute(BaseUrl.getArticleListPath());
                 }
             }
         });
@@ -193,7 +191,7 @@ public class MainActivity extends AppCompatActivity {
                 //下滑刷新，新开一个Task对象--重新请求网络数据
                 isloading = false;
                 isRefresh = true;
-                new ArticleListTask().execute(ArticleListPath);
+                new ArticleListTask().execute(BaseUrl.getArticleListPath());
             }
         });
         }
@@ -214,7 +212,7 @@ public class MainActivity extends AppCompatActivity {
                     new Thread() {
                         public void run() {
                             //发送POST登录请求并处理返回的JSON数据
-                            new JsonUtil().handleUserdata(user, new PostUtil().sendPost(LoginPath, data));
+                            new JsonUtil().handleUserdata(user, new PostUtil().sendPost(BaseUrl.getLoginPath(), data));
                             if (user.getErrorCode() == 0) {
                                 Looper.prepare();
                                 Toast.makeText(MainActivity.this, "自动登录成功", Toast.LENGTH_SHORT).show();
@@ -227,66 +225,23 @@ public class MainActivity extends AppCompatActivity {
             } catch (UnsupportedEncodingException e) {
                 e.printStackTrace();
             }
-            //changeTextViewByRunOnUiThread(user);
         }
     }
+
 
     /**
-     * 按钮点击事件，跳转去登录页面
-     * @param v
+     * AsyncTask--发送请求，处理JSON数据，显示文章
      */
-    public void toLogin(View v){
-        switch (v.getId()){
-            case R.id.btn_toLogin:
-                Intent intent = new Intent();
-                intent.setClass(this,LoginActivity.class);
-                startActivity(intent);
-        break;
-        }
-    }
-
-    private  void changeTextViewByRunOnUiThread(final User user)
-    {
-//        MainActivity.this.runOnUiThread(new Runnable() {
-//            @Override
-//            public void run() {
-//                try {
-//                    Thread.sleep(1500);
-//                    //misLoginTv.setText("用户"+user.getUsername());
-//                } catch (InterruptedException e) {
-//                    e.printStackTrace();
-//                }
-////                Looper.prepare();
-////                Toast.makeText(MainActivity.this,"用户"+user.getUsername(),Toast.LENGTH_SHORT).show();
-////                Looper.loop();
-//            }
-//        });
-        try {
-                    Thread.sleep(1500);
-                    //misLoginTv.setText("用户"+user.getUsername());
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-    }
-
-
     public class ArticleListTask extends AsyncTask<String,Integer,String> {
 
         private  List<Article> mArticleList = new ArrayList<>();
 
-//        private ProgressDialog progressDialog;
-//
         /**
-         * 设置进度条对话框，缓解在处理数据过多时屏幕白屏的尴尬
+         * 可以设置进度条对话框，缓解在一次性处理数据过多时屏幕白屏的尴尬
          */
         @Override
         protected void onPreExecute() {
             super.onPreExecute();
-//            progressDialog = new ProgressDialog(MainActivity.this);
-//            progressDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
-//            progressDialog.setMax(20);
-//            progressDialog.setMessage("正在努力加载中");
-//            progressDialog.show();
         }
 
 
@@ -303,22 +258,10 @@ public class MainActivity extends AppCompatActivity {
                if(isloading ) {
                    i = load_times + i;//加载更多时，令i保持在最新要出来的一页
                }
-                resultdata =  GetUtil.sendGet(params[0] + i + "/json", articleJsondata, handler);
+                resultdata =  GetUtil.sendGet(params[0] + i + "/json", articleJsondata);
             }
-            //mArticleList.clear();
             return resultdata;
          }
-
-//
-//        /**
-//         * 设置进度条
-//         * @param values doInbackground方法传来的参数
-//         */
-//        @Override
-//        protected void onProgressUpdate(Integer... values) {
-//            super.onProgressUpdate(values);
-//            progressDialog.setProgress(values[0]);
-//        }
 
 
         /**
@@ -327,24 +270,25 @@ public class MainActivity extends AppCompatActivity {
          */
         @Override
         protected void onPostExecute(String resultdata) {
-//            progressDialog.dismiss();//数据处理完成，隐藏对话框
             String resultJsondata = resultdata;
-            System.out.println("正在执行onPostExecute方法");
             super.onPostExecute(resultJsondata);
             mRecyclerView.setAdapter(articleAdapter);
             pageListData = new PageListData();
             JsonUtil.handleArtcileData(mArticleList, pageListData, resultJsondata,isRefresh);
-//            articleAdapter.notifyDataSetChanged();//刷新Adapter数据
             articleAdapter.notifyData(mArticleList);
             pageListDataList.add(pageListData);//页码里面有几个对象，就代表文章列表有几页
             resultJsondata = "";
             //articleList，在外面的一些方法会调用到它
             articleList.addAll(mArticleList);
-            //如果文章数组小于固定数量20说明已经出现过的文章被过滤掉，List里面这部分都是新的文章，需要从列表末尾调回顶部
-            if(mArticleList.size() < 20 && mArticleList.size() > 0) {
+            //刷新状态下，如果文章数组小于固定数量20说明已经出现过的文章被过滤掉，List里面这部分都是新的文章，需要从列表末尾调回顶部
+            if(mArticleList.size() < ARTICLECOUNT_ONEPAGE && mArticleList.size() > 0  && isRefresh) {
                 for(int i = mArticleList.size() ; i >= 1; i-- )
                 articleAdapter.notifyItemMoved(articleAdapter.getItemCount(),0);
                 articleAdapter.notifyItemRangeChanged(0,articleAdapter.getItemCount()); //刷新位置，防止数据的位置紊乱
+            }
+            //加载状态下，文章数组数量小于固定数量20，说明文章已经显示完了
+            if(mArticleList.size() < ARTICLECOUNT_ONEPAGE && mArticleList.size() > 0  && isloading){
+                    MainActivity.setIsHasMore_AtricleList(false);
             }
             mSwipeRefreshLayout.setRefreshing(false);//停止刷新动画
             if(! isloading && isRefresh ) {
@@ -358,7 +302,7 @@ public class MainActivity extends AppCompatActivity {
                 isRefresh = false;
                 isloading = false;
                 //上拉加载后，定位到加载出来的位置附近。每一页都有20篇文章
-                mRecyclerView.scrollToPosition(articleAdapter.getItemCount() - 18);
+                mRecyclerView.scrollToPosition(articleAdapter.getItemCount() - ARTICLECOUNT_ONEPAGE);
             }
         }
     }
@@ -385,12 +329,10 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public  boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
-//        System.out.println("R.id.home id :"+R.id.home);
-//        Log.e("id","id为"+id);
         switch (id) {
             case 16908332://左上角按钮的实际id，但是用R.id.home 会找不到
                 Intent intent_user = new Intent();
-                intent_user.setClass(MainActivity.this,LoginActivity.class);
+                intent_user.setClass(MainActivity.this,UserActivity.class);
                 startActivity(intent_user);
                 //Toast.makeText(this,"即将打开用户页面",Toast.LENGTH_SHORT).show();
                 break;
@@ -402,6 +344,39 @@ public class MainActivity extends AppCompatActivity {
 
         }
         return true;
+    }
+
+
+    public static boolean isHasMore_AtricleList() {
+        return isHasMore_AtricleList;
+    }
+
+    public static void setIsHasMore_AtricleList(boolean isHasMore_AtricleList) {
+        MainActivity.isHasMore_AtricleList = isHasMore_AtricleList;
+    }
+
+    /**
+     * 网上的方法--针对安卓P，关闭警告调用了非官方接口的弹窗
+     */
+    private void closeAndroidPDialog(){
+        try {
+            Class aClass = Class.forName("android.content.pm.PackageParser$Package");
+            Constructor declaredConstructor = aClass.getDeclaredConstructor(String.class);
+            declaredConstructor.setAccessible(true);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        try {
+            Class cls = Class.forName("android.app.ActivityThread");
+            Method declaredMethod = cls.getDeclaredMethod("currentActivityThread");
+            declaredMethod.setAccessible(true);
+            Object activityThread = declaredMethod.invoke(null);
+            Field mHiddenApiWarningShown = cls.getDeclaredField("mHiddenApiWarningShown");
+            mHiddenApiWarningShown.setAccessible(true);
+            mHiddenApiWarningShown.setBoolean(activityThread, true);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }
 

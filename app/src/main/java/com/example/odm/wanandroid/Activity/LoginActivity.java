@@ -2,10 +2,11 @@ package com.example.odm.wanandroid.Activity;
 
 import android.content.Intent;
 import android.graphics.Color;
-import android.os.Looper;
-import android.renderscript.ScriptIntrinsicYuvToRGB;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.os.Looper;
+import android.support.v7.app.ActionBar;
+import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
@@ -13,7 +14,7 @@ import android.text.TextUtils;
 import android.text.method.LinkMovementMethod;
 import android.text.style.ClickableSpan;
 import android.text.style.ForegroundColorSpan;
-import android.util.Log;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -25,6 +26,7 @@ import com.example.odm.wanandroid.R;
 import com.example.odm.wanandroid.Util.JsonUtil;
 import com.example.odm.wanandroid.Util.PostUtil;
 import com.example.odm.wanandroid.Util.SharedPreferencesUtil;
+import com.example.odm.wanandroid.base.BaseUrl;
 import com.example.odm.wanandroid.bean.User;
 
 import java.io.UnsupportedEncodingException;
@@ -58,6 +60,15 @@ public class LoginActivity extends AppCompatActivity {
         jsonUtil = new JsonUtil();
         postUtil = new PostUtil();
         LoginUser = new User();
+        Toolbar toolbar = (Toolbar)findViewById(R.id.tool_bar_login);
+        setSupportActionBar(toolbar);
+        ActionBar actionBar = getSupportActionBar();
+        if (actionBar != null){
+            //显示左上角图标，如果设成false，则没有程序图标，仅仅就个标题，否则，显示应用程序图标，对应id为android.R.id.home，对应ActionBar.DISPLAY_SHOW_HOME
+            actionBar.setDisplayHomeAsUpEnabled(true);
+            actionBar.setHomeAsUpIndicator(R.mipmap.ic_back_32);
+            actionBar.setTitle("登录");//设置标题
+        }
         mLoginEt_username = (EditText)findViewById(R.id.et_login_username);
         mLoginEt_password  = (EditText) findViewById(R.id.et_login_password);
         mLoginBtn = (Button)findViewById(R.id.bt_login);
@@ -68,7 +79,6 @@ public class LoginActivity extends AppCompatActivity {
         ClickableSpan clickableSpan = new ClickableSpan() {
             @Override
             public void onClick(View widget) {
-                //Toast.makeText(LoginActivity.this, "触发点击跳转注册事件!", Toast.LENGTH_SHORT).show();
                 Intent intent = new Intent();
                 intent.setClass(LoginActivity.this,RegisterActivity.class);
                 startActivity(intent);
@@ -87,7 +97,7 @@ public class LoginActivity extends AppCompatActivity {
 
     /**
      *  登录按钮的点击事件，发送登录的POST请求
-     * @param 控件V
+     * @param v 控件
      */
     public void login(View v){
         //Toast.makeText(LoginActivity.this,"登录按钮被点击",Toast.LENGTH_SHORT).show();
@@ -112,7 +122,7 @@ public class LoginActivity extends AppCompatActivity {
                             try {
                                 //"?username="是错误的，会导致网络返回码400，出现服务器无法理解的语法，虽然在Postman上模拟的完整接口有?，但是Post请求真正发送的并不是自己简单拼接起来的
                                 data = "username="+ URLEncoder.encode(userName,"UTF-8")+"&password="+URLEncoder.encode(userPwd,"UTF-8");
-                                jsonUtil.handleUserdata(LoginUser,postUtil.sendPost(LoginPath,data));
+                                jsonUtil.handleUserdata(LoginUser,postUtil.sendPost(BaseUrl.getLoginPath(),data));
                                 checkLogin();
                             } catch (UnsupportedEncodingException e) {
                                 e.printStackTrace();
@@ -123,6 +133,10 @@ public class LoginActivity extends AppCompatActivity {
                 break;
         }
     }
+
+    /**
+     * 检测点击登录键后是否成功登录
+     */
     public void checkLogin(){
         if(LoginUser.getErrorCode() == 0 ) {
             Looper.prepare();
@@ -138,5 +152,19 @@ public class LoginActivity extends AppCompatActivity {
             Toast.makeText(this, "登录失败！原因："+LoginUser.getErrorMsg(), Toast.LENGTH_SHORT).show();
             Looper.loop();
         }
+    }
+
+    /**
+     * 点击返回键做了处理
+     */
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()){
+            case android.R.id.home:
+                finish();
+                break;
+            default:
+        }
+        return true;
     }
 }

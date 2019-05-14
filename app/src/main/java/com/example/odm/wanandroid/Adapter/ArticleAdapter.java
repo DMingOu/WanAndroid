@@ -14,6 +14,7 @@ import android.view.ViewGroup;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import com.example.odm.wanandroid.Activity.MainActivity;
 import com.example.odm.wanandroid.Activity.Search_ArticleActivity;
 import com.example.odm.wanandroid.Db.ArticlebaseHelper;
 import com.example.odm.wanandroid.R;
@@ -94,10 +95,10 @@ public class ArticleAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         if(mContext == null){
             mContext = parent.getContext();
         }
-        //如果达到最后一个item就加载 "加载更多" 这个view
+        //如果达到最后一个item就加载 "加载更多" or "没有更多"
         if(viewType == ITEM_TYPE_FOOTER) {
             //如果没有更多了，就加载 "没有更多" 这个view
-            if(! Search_ArticleActivity.getStatus_isHasMore()){
+            if(! Search_ArticleActivity.getStatus_isHasMore() || ! MainActivity.isHasMore_AtricleList()){
                 View view = LayoutInflater.from(mContext).inflate(R.layout.item_footer_loading_nomore,parent,false);
                 return new FooterViewHolder_NoMore(view);
             }

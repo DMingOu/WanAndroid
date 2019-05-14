@@ -8,10 +8,14 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.KeyEvent;
+import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
@@ -26,6 +30,7 @@ import com.example.odm.wanandroid.R;
 import com.example.odm.wanandroid.RecyclerViewNoBugLinearLayoutManager;
 import com.example.odm.wanandroid.Util.JsonUtil;
 import com.example.odm.wanandroid.Util.PostUtil;
+import com.example.odm.wanandroid.base.BaseUrl;
 import com.example.odm.wanandroid.bean.Article;
 import com.example.odm.wanandroid.bean.PageListData;
 
@@ -41,9 +46,7 @@ public class Search_ArticleActivity extends AppCompatActivity {
     private List<PageListData> pageListDataList = new ArrayList<>();
     private ArticleAdapter articleAdapter;
     private RecyclerView mRecyclerView;
-    private LinearLayoutManager lineLayoutManager;
     private PageListData pageListData;
-    private String articleJsondata  = "";
     private String resultdata = "";
     private ArticlebaseHelper dbHelper;
     private String keyword;//搜索关键词
@@ -51,18 +54,14 @@ public class Search_ArticleActivity extends AppCompatActivity {
     private boolean isRefresh = false;
     private boolean mIsRefreshing=false;
     private boolean isloading  = false;
-    private  static boolean isHasMore = false;
-    private int load_times = 0; //加载的次数，用于发送文章请求
-    final String SearchPath = "https://www.wanandroid.com/article/query/";
+    private  static boolean isHasMore = false;//是否还有下一页能加载
+    private int load_times = 0; //加载的次数，被用于发送文章请求，控制页码
+    private final  int ARTICLECOUNT_ONEPAGE = 20;
 
     Handler handler = new Handler(){//此函数是属于MainActivity.java所在线程的函数方法，所以可以直接调用MainActivity的 所有方法。
         public void handleMessage(Message msg) {
-            if (msg.what == 0x01) {   //
-                pageListData = new PageListData();
-                System.out.println("resultdata为"+resultdata);
-                JsonUtil.handleArtcileData(articleList, pageListData, resultdata,isRefresh);
-                pageListDataList.add(pageListData);//页码里面有几个对象，就代表文章列表有几页
-                resultdata = "";
+            if (msg.what == 0x02) {   //
+                //此处写handler处理操作
             } else {
                 Toast.makeText(Search_ArticleActivity.this, "请重新输入地址：", Toast.LENGTH_SHORT).show();
             }
@@ -82,6 +81,15 @@ public class Search_ArticleActivity extends AppCompatActivity {
      *初始化控件
      */
     protected  void initViews(){
+        Toolbar toolbar = (Toolbar)findViewById(R.id.tool_bar_search);
+        setSupportActionBar(toolbar);
+        ActionBar actionBar = getSupportActionBar();
+        if (actionBar != null){
+            actionBar.setDisplayHomeAsUpEnabled(true);
+            actionBar.setHomeAsUpIndicator(R.mipmap.ic_back_32);
+            actionBar.setTitle("搜索");
+        }
+
         mSearchEt  = (EditText)findViewById(R.id.et_search);
         mRecyclerView = (RecyclerView)findViewById(R.id.rv_article_search);
         final LinearLayoutManager linearLayoutManager = new RecyclerViewNoBugLinearLayoutManager(Search_ArticleActivity.this,LinearLayoutManager.VERTICAL,false);
@@ -100,7 +108,7 @@ public class Search_ArticleActivity extends AppCompatActivity {
                     if(isHasMore) {
                         isloading = true;
                         isRefresh = false;
-                        new Search_ArticleActivity.ArticleList_SearchTask().execute(SearchPath);
+                        new Search_ArticleActivity.ArticleList_SearchTask().execute(BaseUrl.getSearchPath());
                  }
                 }
             }
@@ -128,7 +136,10 @@ public class Search_ArticleActivity extends AppCompatActivity {
                     // 在这里写搜索的操作,一般都是网络请求数据
                     keyword  = mSearchEt.getText().toString();
                     load_times = 0; //每次点击搜索键重置加载次数为0，展示第一页搜索的数据
-                    new ArticleList_SearchTask().execute(SearchPath);
+                    articleList.clear();
+                    isloading = true;
+                    isRefresh = false;
+                    new ArticleList_SearchTask().execute(BaseUrl.getSearchPath());
                     return true;
                 }
                 return false;
@@ -137,7 +148,7 @@ public class Search_ArticleActivity extends AppCompatActivity {
     }
 
     /**
-     * 初始化文章列表,但未装填数据
+     * 初始化文章列表
      */
     protected void initArticleAdapter(){
         articleAdapter = new ArticleAdapter(articleList);
@@ -149,6 +160,7 @@ public class Search_ArticleActivity extends AppCompatActivity {
                 ContentValues values = new ContentValues();    //创建存放数据的ContentValues对象
                 values.put("title",articleList.get(position).getTitle());
                 db.insert("Article",null,values); //数据库执行插入命令
+                db.close();//关闭数据库
                 Intent intent = new Intent(Search_ArticleActivity.this,WebContentActivity.class);
                 intent.putExtra("url",articleList.get(position).getLink());
                 intent.putExtra("title",articleList.get(position).getTitle());
@@ -163,6 +175,7 @@ public class Search_ArticleActivity extends AppCompatActivity {
                 ContentValues values = new ContentValues();    //创建存放数据的ContentValues对象
                 values.put("title",articleList.get(position).getTitle());
                 db.insert("Article",null,values); //数据库执行插入命令
+                db.close();//关闭数据库
                 Intent intent = new Intent(Search_ArticleActivity.this,WebContentActivity.class);
                 intent.putExtra("title",articleList.get(position).getTitle());
                 intent.putExtra("url",articleList.get(position).getLink());
@@ -172,6 +185,10 @@ public class Search_ArticleActivity extends AppCompatActivity {
         } );
     }
 
+
+    /**
+     * AsyncTask--发送请求，处理JSON数据，显示文章
+     */
     public class ArticleList_SearchTask extends AsyncTask<String,Integer,String > {
 
         private  List<Article> mArticleList = new ArrayList<>();
@@ -182,19 +199,16 @@ public class Search_ArticleActivity extends AppCompatActivity {
          */
         @Override
         protected String doInBackground(String... params) {
-            articleList.clear();
             try {
-
                 for (int i = 0; i < 1; i++) {
                     //初始化文章列表里面的数据
-                    //publishProgress(i);
-                    if(isloading && isHasMore ) {
+                    if (isloading && isHasMore) {
                         i = load_times + i;//加载更多时，令i保持在最新要出来的一页
                     }
-                    String  keywordString= "k="+URLEncoder.encode(keyword,"UTF-8");
-                    resultdata = postUtil.sendPost(params[0]+i+"/json",keywordString);
+                    String keywordString = "k=" + URLEncoder.encode(keyword, "UTF-8");
+                    resultdata = postUtil.sendPost(params[0] + i + "/json", keywordString);
 
-                }
+            }
             } catch (UnsupportedEncodingException e) {
                 e.printStackTrace();
             }
@@ -213,20 +227,17 @@ public class Search_ArticleActivity extends AppCompatActivity {
             mRecyclerView.setAdapter(articleAdapter);
             pageListData = new PageListData();
             JsonUtil.handleArtcileData(mArticleList, pageListData, resultdata,isRefresh);
-            //articleAdapter.notifyData(mArticleList);
-
             pageListDataList.add(pageListData);//页码里面有几个对象，就代表文章列表有几页
-            resultdata = "";
             articleList.addAll(mArticleList);
             articleAdapter.notifyDataSetChanged();//刷新Adapter数据
-            //articleAdapter.notifyItemRangeChanged(0,articleAdapter.getItemCount());
             if (mArticleList.size() == 0) {
                 Toast.makeText(Search_ArticleActivity.this, "抱歉没有这方面的内容", Toast.LENGTH_LONG).show();
             }else {
                 //如果加载出来的列表小于正常一页的数量20，说明已经加载完毕了
-                if (mArticleList.size() <  20 && mArticleList.size() > 0){
+                if (mArticleList.size() <  ARTICLECOUNT_ONEPAGE && mArticleList.size() > 0){
                     isHasMore = false;
                     load_times = 0; //重置了加载次数，让用户搜索关键词可以从第一页开始
+                    Log.e("ArticleAmount","文章总数" + articleAdapter.getItemCount());
                 } else {
                     isHasMore = true; //加载这一页有20篇文章，说明可能还会有下一页
                 }
@@ -239,16 +250,24 @@ public class Search_ArticleActivity extends AppCompatActivity {
                     isRefresh = false;
                     isloading = false;
                     //上拉加载后，定位到加载出来的位置附近。每一页都有20篇文章
-                    mRecyclerView.scrollToPosition(articleAdapter.getItemCount() - 18);
+                    mRecyclerView.scrollToPosition(articleAdapter.getItemCount() - ARTICLECOUNT_ONEPAGE);
                 }
             }
         }
     }
 
-
+    /**
+     * 获取"搜索界面是否还有下一页"状态
+     * @return isHasMore
+     */
     public static boolean getStatus_isHasMore(){
         return isHasMore;
     }
+
+    /**
+     * 设置"搜索界面是否有下一页"的属性
+     * @param bool
+     */
     public static void setStatus_isHasMore( boolean bool) {
         isHasMore = bool;
     }
@@ -261,6 +280,20 @@ public class Search_ArticleActivity extends AppCompatActivity {
         InputMethodManager manager = (InputMethodManager) view.getContext()
                 .getSystemService(Context.INPUT_METHOD_SERVICE);
         manager.hideSoftInputFromWindow(view.getWindowToken(), 0);
+    }
+
+    /**
+     * 点击返回键做了处理
+     */
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()){
+            case android.R.id.home:
+                finish();
+                break;
+            default:
+        }
+        return true;
     }
 
 }

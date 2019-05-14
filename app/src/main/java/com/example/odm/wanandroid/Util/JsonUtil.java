@@ -79,6 +79,7 @@ public class JsonUtil {
                                 }
                             } while (cursor.moveToNext());
                         }
+                        cursor.close();
                         if(isShown) {
                             continue; //如果这篇文章已经被展示了，跳过这篇文章
                         }

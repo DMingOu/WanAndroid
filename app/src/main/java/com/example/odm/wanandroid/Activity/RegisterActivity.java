@@ -3,8 +3,10 @@ package com.example.odm.wanandroid.Activity;
 import android.content.Intent;
 import android.graphics.Color;
 import android.os.Looper;
+import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.widget.Toolbar;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
@@ -13,6 +15,7 @@ import android.text.method.LinkMovementMethod;
 import android.text.style.ClickableSpan;
 import android.text.style.ForegroundColorSpan;
 import android.util.Log;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -22,6 +25,7 @@ import android.widget.Toast;
 import com.example.odm.wanandroid.R;
 import com.example.odm.wanandroid.Util.JsonUtil;
 import com.example.odm.wanandroid.Util.PostUtil;
+import com.example.odm.wanandroid.base.BaseUrl;
 import com.example.odm.wanandroid.bean.User;
 
 import java.io.UnsupportedEncodingException;
@@ -37,7 +41,7 @@ public class RegisterActivity extends AppCompatActivity {
     private User RgtUser;
     private JsonUtil jsonUtil;
     private PostUtil postUtil;
-    final String RgtPath = "https://www.wanandroid.com/user/register";
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -53,6 +57,16 @@ public class RegisterActivity extends AppCompatActivity {
         //实例化工具类对象
         jsonUtil = new JsonUtil();
         postUtil = new PostUtil();
+        Toolbar toolbar = (Toolbar)findViewById(R.id.tool_bar_register);
+        setSupportActionBar(toolbar);
+        ActionBar actionBar = getSupportActionBar();
+        if (actionBar != null){
+            //使左上角图标是否显示，如果设成false，则没有程序图标，仅仅就个标题，否则，显示应用程序图标，对应id为android.R.id.home，对应ActionBar.DISPLAY_SHOW_HOME
+            actionBar.setDisplayHomeAsUpEnabled(true);
+            actionBar.setHomeAsUpIndicator(R.mipmap.ic_back_32);
+            actionBar.setTitle("注册");
+        }
+
         mRgtEt_username = (EditText)findViewById(R.id.et_register_username);
         mRgtEt_password = (EditText)findViewById(R.id.et_register_password);
         mRgtEt_password_confirm = (EditText)findViewById(R.id.et_register_confirm);
@@ -121,8 +135,7 @@ public class RegisterActivity extends AppCompatActivity {
                              try {
                                  //"?username="是错误的，会导致网络返回码400，出现服务器无法理解的语法，虽然在Postman上模拟的完整接口有?，但是Post请求真正发送的并不是自己简单拼接起来的
                                  data = "username="+ URLEncoder.encode(username,"UTF-8")+"&password="+URLEncoder.encode(userpwd,"UTF-8")+"&repassword="+URLEncoder.encode(userpwd_confirm,"UTF-8");
-                                 Log.e("finalPath",RgtPath+data);
-                                 jsonUtil.handleUserdata(RgtUser,postUtil.sendPost(RgtPath,data));
+                                 jsonUtil.handleUserdata(RgtUser,postUtil.sendPost(BaseUrl.getRgtPath(),data));
                                  checkRegister();
                              } catch (UnsupportedEncodingException e) {
                                  e.printStackTrace();
@@ -149,4 +162,19 @@ public class RegisterActivity extends AppCompatActivity {
             Looper.loop();
         }
     }
+
+    /**
+     * 点击返回键做了处理
+     */
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()){
+            case android.R.id.home:
+                finish();
+                break;
+            default:
+        }
+        return true;
+    }
+
 }
