@@ -27,7 +27,6 @@ public class ArticlebaseHelper extends SQLiteOpenHelper {
     public void onCreate(SQLiteDatabase db) {
         String CREATE_ARTICLE = "create table Article (title text ,id integer)";
         db.execSQL(CREATE_ARTICLE);
-        //Toast.makeText(mContext,"Create Succeeded",Toast.LENGTH_SHORT).show();
     }
 
     /**

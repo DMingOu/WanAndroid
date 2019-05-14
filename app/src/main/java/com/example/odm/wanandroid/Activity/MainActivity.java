@@ -1,9 +1,12 @@
 package com.example.odm.wanandroid.Activity;
 
+import android.content.BroadcastReceiver;
 import android.content.ContentValues;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Color;
+import android.net.ConnectivityManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
@@ -25,6 +28,7 @@ import android.widget.Toast;
 import com.example.odm.wanandroid.Adapter.ArticleAdapter;
 import com.example.odm.wanandroid.Application.MyApplication;
 import com.example.odm.wanandroid.Db.ArticlebaseHelper;
+import com.example.odm.wanandroid.HandlerManger;
 import com.example.odm.wanandroid.R;
 import com.example.odm.wanandroid.RecyclerViewNoBugLinearLayoutManager;
 import com.example.odm.wanandroid.Util.GetUtil;
@@ -35,6 +39,7 @@ import com.example.odm.wanandroid.base.BaseUrl;
 import com.example.odm.wanandroid.bean.Article;
 import com.example.odm.wanandroid.bean.PageListData;
 import com.example.odm.wanandroid.bean.User;
+import com.example.odm.wanandroid.receiver.InterRecevier;
 
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Constructor;
@@ -55,6 +60,7 @@ public class MainActivity extends AppCompatActivity {
     private String resultdata = "";
     private ArticlebaseHelper dbHelper;
     private SwipeRefreshLayout mSwipeRefreshLayout;
+    private BroadcastReceiver receiver = new InterRecevier();
     private boolean mIsRefreshing=false;
     private static boolean isLogin = false;
     private int load_times = 0; //加载的次数，被用于发送文章请求，控制页码
@@ -66,7 +72,18 @@ public class MainActivity extends AppCompatActivity {
    Handler handler = new Handler(){//此函数是属于MainActivity.java所在线程的函数方法，所以可以直接调用MainActivity的 所有方法。
         public void handleMessage(Message msg) {
             if (msg.what == 0x01) {
-                //System.out.println("resultdata为"+resultdata);
+                if(articleList.size() == 0) {
+                    //第一篇文章都还没加载出来,需要请求数据加载文章
+                    //若首次启动就加载刷新动画，使用SwipeRefreshLayout的post方法
+                    mSwipeRefreshLayout.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            load_times = 0;
+                            mSwipeRefreshLayout.setRefreshing(true);
+                            new ArticleListTask().execute(BaseUrl.getArticleListPath());
+                        }
+                    });
+                }
             } else {
                 Toast.makeText(MainActivity.this, "请重新输入地址：", Toast.LENGTH_SHORT).show();
             }
@@ -78,19 +95,11 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main_ariticle);
         dbHelper = new ArticlebaseHelper(this,"Article.db",null,1);
-
+        HandlerManger.getInstance().setHandler(handler);
+        initBoardcaster();
         initViews();
         initArticleAdapter();
         isloading = true;
-        //若首次启动就加载刷新动画，使用SwipeRefreshLayout的post方法
-        mSwipeRefreshLayout.post(new Runnable() {
-            @Override
-            public void run() {
-                load_times = 0;
-                mSwipeRefreshLayout.setRefreshing(true);
-                new ArticleListTask().execute(BaseUrl.getArticleListPath());
-            }
-        });
         checkStatus(); //检查登录状态
         closeAndroidPDialog();//关闭警告弹窗
     }
@@ -99,6 +108,13 @@ public class MainActivity extends AppCompatActivity {
     protected void onStart() {
         super.onRestart();
         Search_ArticleActivity.setStatus_isHasMore(true); //为了在主界面不受搜索界面的是否还能加载影响
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        unregisterReceiver(receiver);//注销注册的广播
+        handler.removeCallbacksAndMessages(null);//断掉与Handler 的联系，销毁Handler 消息的处理,防止handler导致内存泄漏
     }
 
     /**
@@ -378,6 +394,16 @@ public class MainActivity extends AppCompatActivity {
             e.printStackTrace();
         }
     }
+
+
+
+    protected void initBoardcaster(){
+        IntentFilter filter = new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION); //动态注册广播
+        this.registerReceiver(receiver,filter);//注册广播
+    }
 }
+
+
+
 
 

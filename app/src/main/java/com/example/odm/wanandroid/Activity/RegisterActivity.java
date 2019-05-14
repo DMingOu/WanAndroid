@@ -49,6 +49,8 @@ public class RegisterActivity extends AppCompatActivity {
         initViews();
 
     }
+
+
     /*
         *初始化控件
         */
@@ -86,7 +88,7 @@ public class RegisterActivity extends AppCompatActivity {
         };
         style_mLoginTv.setSpan(clickableSpan, 5, 11, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
         //设置可点击文字的颜色
-        ForegroundColorSpan foregroundColorSpan = new ForegroundColorSpan(Color.parseColor("#FF4081"));
+        ForegroundColorSpan foregroundColorSpan = new ForegroundColorSpan(Color.parseColor("#FF4081"));//red
         style_mLoginTv.setSpan(foregroundColorSpan,5,11, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         //将Spannable配置给TextView
         mLoginTv.setMovementMethod(LinkMovementMethod.getInstance());

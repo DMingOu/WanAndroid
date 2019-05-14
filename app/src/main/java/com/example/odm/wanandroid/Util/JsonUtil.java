@@ -58,7 +58,6 @@ public class JsonUtil {
                 SQLiteDatabase db = dbhelper.getReadableDatabase();
                 JSONObject json = new JSONObject(acceptdata);
                 JSONObject data = json.getJSONObject("data");
-                //JSONObject data = new JSONObject(acceptdata);
                 int curPage = data.getInt("curPage");
                 pageListData.setCurPage(curPage);
                 int total = data.getInt("total");
@@ -90,7 +89,7 @@ public class JsonUtil {
                             content.getString("title"));
                     article.setLink(content.getString("link"));  //link-->webview跳转
                     article.setId(content.getInt("id"));         //id-->刷新需要判断是否已被显示
-                    articleList.add(article);
+                    articleList.add(article);                    //文章列表加入文章对象
                 }
 
             }

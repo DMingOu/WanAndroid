@@ -1,7 +1,5 @@
 package com.example.odm.wanandroid.Util;
 
-import android.util.Log;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -26,7 +24,6 @@ public class GetUtil {
 
                 HttpURLConnection connection;
                 try {
-                    System.out.println("正在进行sendPost");
                     URL url = new URL(Path);
                     connection = (HttpURLConnection) url.openConnection();
                     connection.setRequestMethod("GET");
@@ -40,8 +37,7 @@ public class GetUtil {
                         while ((line = bufferedReader.readLine()) != null) {
                             resultdata += line;
                         }
-                        Log.e("resultdata",resultdata);
-                        if (resultdata == null) System.out.println("接收数据一开始就为空了QAQ");
+                        if (resultdata == null) System.out.println("接收数据一开始就为空了");
                         //handler.sendEmptyMessage(0x01);  //请求完毕，返回自己自定义的信息 id，与主线程通知，开启下一步操作
                     }
                 } catch (MalformedURLException e) {

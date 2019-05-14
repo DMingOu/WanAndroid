@@ -25,7 +25,7 @@ public class WebContentActivity extends AppCompatActivity {
         if (actionBar != null){
             //使左上角图标是否显示，如果设成false，则没有程序图标，仅仅就个标题，否则，显示应用程序图标，对应id为android.R.id.home，对应ActionBar.DISPLAY_SHOW_HOME
             actionBar.setDisplayHomeAsUpEnabled(true);
-            actionBar.setHomeAsUpIndicator(R.drawable.ic_back_1);
+            actionBar.setHomeAsUpIndicator(R.mipmap.ic_back_32);
         }
         mContentWV = (WebView) findViewById(R.id.wv_content);
         mContentWV.getSettings().setJavaScriptEnabled(true);

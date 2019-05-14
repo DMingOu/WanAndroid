@@ -1,9 +1,12 @@
 package com.example.odm.wanandroid.Activity;
 
+import android.content.BroadcastReceiver;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.database.sqlite.SQLiteDatabase;
+import android.net.ConnectivityManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
@@ -33,6 +36,7 @@ import com.example.odm.wanandroid.Util.PostUtil;
 import com.example.odm.wanandroid.base.BaseUrl;
 import com.example.odm.wanandroid.bean.Article;
 import com.example.odm.wanandroid.bean.PageListData;
+import com.example.odm.wanandroid.receiver.InterRecevier;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
@@ -51,6 +55,7 @@ public class Search_ArticleActivity extends AppCompatActivity {
     private ArticlebaseHelper dbHelper;
     private String keyword;//搜索关键词
     private PostUtil postUtil;//Post工具类
+    private BroadcastReceiver receiver = new InterRecevier();
     private boolean isRefresh = false;
     private boolean mIsRefreshing=false;
     private boolean isloading  = false;
@@ -73,8 +78,16 @@ public class Search_ArticleActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_search_article);
         dbHelper = new ArticlebaseHelper(this,"Article.db",null,1);
+        initBoardcaster();
         initViews();
         initArticleAdapter();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        unregisterReceiver(receiver);//注销注册的广播
+        handler.removeCallbacksAndMessages(null);//断掉与Handler 的联系，销毁Handler 消息的处理,防止handler导致内存泄漏
     }
 
     /**
@@ -117,11 +130,7 @@ public class Search_ArticleActivity extends AppCompatActivity {
                 new View.OnTouchListener() {
                     @Override
                     public boolean onTouch(View v, MotionEvent event) {
-                        if (mIsRefreshing) {
-                            return true;
-                        } else {
-                            return false;
-                        }
+                        return mIsRefreshing;
                     }
                 }
         );
@@ -266,7 +275,7 @@ public class Search_ArticleActivity extends AppCompatActivity {
 
     /**
      * 设置"搜索界面是否有下一页"的属性
-     * @param bool
+     * @param bool 是否下页属性
      */
     public static void setStatus_isHasMore( boolean bool) {
         isHasMore = bool;
@@ -294,6 +303,11 @@ public class Search_ArticleActivity extends AppCompatActivity {
             default:
         }
         return true;
+    }
+
+    protected void initBoardcaster(){
+        IntentFilter filter = new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION); //动态注册广播
+        this.registerReceiver(receiver,filter);//注册广播
     }
 
 }

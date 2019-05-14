@@ -23,7 +23,7 @@ public class PostUtil {
      */
     public String sendPost(String path, String data) {
         //定义结果字符串
-        String resultdata = null;
+        String resultdata = "";
         InputStream is;
         try {
             //请求的地址为path，根据地址创建URL对象
@@ -43,12 +43,6 @@ public class PostUtil {
             urlConnection.setRequestProperty("Content-Length", String.valueOf(data.getBytes().length));
             // 设置请求的头
             urlConnection.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 6.3; WOW64; rv:27.0) Gecko/20100101 Firefox/27.0");
-//            //设置请求的头
-//            String s = CookieUtil.getCookiePreference(MyApplication.getContext());
-//            if(! s.equals("")) {
-//                urlConnection.setRequestProperty("Cookie", s);
-//                Log.e("Cookie",s);
-//            }
             //发送POST请求必须设置允许输入和输出
             urlConnection.setDoInput(true);
             urlConnection.setDoOutput(true);
@@ -65,9 +59,7 @@ public class PostUtil {
             //网络返回码不等于200时，说明网络连接(请求POST)出现异常
             if(urlConnection.getResponseCode() >= 400){
                 is = urlConnection.getErrorStream();
-                System.out.println("网络码"+urlConnection.getResponseCode());
             } else {
-                System.out.println("网络码"+urlConnection.getResponseCode());
                 //获取服务器端响应的输入流对象
                  is = urlConnection.getInputStream();
             }
@@ -84,7 +76,6 @@ public class PostUtil {
                 baos.close();
                 //返回结果字符串（JSON数据）
                 resultdata = new String(baos.toByteArray());
-                System.out.println("Post请求得到的返回数据"+ resultdata);
                 //关闭连接
                 urlConnection.disconnect();
             } catch (ProtocolException e1) {
