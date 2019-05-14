@@ -59,7 +59,7 @@
                 android:id="@+id/et_register_password"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-
+                android:inputType="textPassword"
                 android:hint="密码" />
 
         </android.support.design.widget.TextInputLayout>
@@ -72,7 +72,7 @@
                 android:id="@+id/et_register_confirm"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-
+                android:inputType="textPassword"
                 android:hint="请再次确认密码" />
 
         </android.support.design.widget.TextInputLayout>
