@@ -25,7 +25,7 @@
         android:layout_height="wrap_content"
         android:layout_centerHorizontal="true"
         android:layout_marginTop="80dp"
-        android:src="@mipmap/register_64"/>
+        android:src="@mipmap/registeractivity_64"/>
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -44,7 +44,7 @@
                 android:id="@+id/et_register_username"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-
+                android:textStyle="bold"
                 android:hint="用户名" />
 
         </android.support.design.widget.TextInputLayout>

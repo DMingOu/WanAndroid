@@ -7,18 +7,15 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
-import android.os.Handler;
 import android.provider.Settings;
 
-import com.example.odm.wanandroid.HandlerManger;
+import com.example.odm.wanandroid.base.HandlerManger;
 
 /**
  * Created by ODM on 2019/5/14.
  */
 
 public class InterRecevier extends BroadcastReceiver {
-
-    Handler handler = new Handler();
 
     @Override
     public void onReceive(Context context, Intent intent) {

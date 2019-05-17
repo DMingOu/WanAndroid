@@ -1,4 +1,4 @@
-package com.example.odm.wanandroid.Util;
+package com.example.odm.wanandroid.util;
 
 import java.io.BufferedReader;
 import java.io.IOException;

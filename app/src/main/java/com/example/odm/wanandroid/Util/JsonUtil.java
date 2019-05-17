@@ -1,12 +1,12 @@
-package com.example.odm.wanandroid.Util;
+package com.example.odm.wanandroid.util;
 
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.util.Log;
 
-import com.example.odm.wanandroid.Application.MyApplication;
-import com.example.odm.wanandroid.Db.ArticlebaseHelper;
+import com.example.odm.wanandroid.application.MyApplication;
+import com.example.odm.wanandroid.db.ArticlebaseHelper;
 import com.example.odm.wanandroid.bean.Article;
 import com.example.odm.wanandroid.bean.PageListData;
 import com.example.odm.wanandroid.bean.User;
@@ -25,6 +25,11 @@ public class JsonUtil {
 
     private  Context mContext;
 
+    /**
+     * 处理关于用户个人信息的Json数据
+     * @param user
+     * @param acceptdata
+     */
     public void handleUserdata(User user,String acceptdata){
         try {
             JSONObject value = new JSONObject(acceptdata);
@@ -44,6 +49,7 @@ public class JsonUtil {
     }
 
     /**
+     * 处理关于文章列表的JSON数据
      * @param articleList  文章列表对象
      * @param pageListData 页码对象
      * @param acceptdata   接受的JSON数据

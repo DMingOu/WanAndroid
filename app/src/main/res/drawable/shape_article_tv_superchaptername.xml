@@ -3,15 +3,15 @@
 
     <item android:state_activated="true">
         <shape>
-            <stroke android:width="0.5dp"
-                android:color="@color/red"/>
+            <stroke android:width="0.7dp"
+                android:color="@color/blue"/>
         </shape>
     </item>
 <!--设置包裹文章类别的空心框的主题-->
     <item>
         <shape>
-            <stroke android:width="0.5dp"
-                android:color="@color/red"/>
+            <stroke android:width="0.7dp"
+                android:color="@color/blue"/>
         </shape>
 
     </item>

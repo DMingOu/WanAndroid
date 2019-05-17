@@ -12,7 +12,7 @@
         android:orientation="horizontal">
 
         <ProgressBar
-            android:id="@+id/pb_loading"
+            android:id="@+id/pb_loadingmore"
             style="@style/LoadingProgressStyle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"

@@ -1,4 +1,4 @@
-package com.example.odm.wanandroid.Activity;
+package com.example.odm.wanandroid.activity;
 
 import android.content.Intent;
 import android.graphics.Color;
@@ -21,11 +21,11 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.example.odm.wanandroid.Application.MyApplication;
+import com.example.odm.wanandroid.application.MyApplication;
 import com.example.odm.wanandroid.R;
-import com.example.odm.wanandroid.Util.JsonUtil;
-import com.example.odm.wanandroid.Util.PostUtil;
-import com.example.odm.wanandroid.Util.SharedPreferencesUtil;
+import com.example.odm.wanandroid.util.JsonUtil;
+import com.example.odm.wanandroid.util.PostUtil;
+import com.example.odm.wanandroid.util.SharedPreferencesUtil;
 import com.example.odm.wanandroid.base.BaseUrl;
 import com.example.odm.wanandroid.bean.User;
 
@@ -66,7 +66,7 @@ public class LoginActivity extends AppCompatActivity {
         if (actionBar != null){
             //显示左上角图标，如果设成false，则没有程序图标，仅仅就个标题，否则，显示应用程序图标，对应id为android.R.id.home，对应ActionBar.DISPLAY_SHOW_HOME
             actionBar.setDisplayHomeAsUpEnabled(true);
-            actionBar.setHomeAsUpIndicator(R.mipmap.ic_back_32);
+            actionBar.setHomeAsUpIndicator(R.mipmap.back_toolbar_32);
             actionBar.setTitle("登录");//设置标题
         }
         mLoginEt_username = (EditText)findViewById(R.id.et_login_username);
@@ -118,11 +118,12 @@ public class LoginActivity extends AppCompatActivity {
                     //开启子线程，执行注册操作
                     new Thread() {
                         public void run(){
-                            final String data;
+                            final String keyString;
                             try {
                                 //"?username="是错误的，会导致网络返回码400，出现服务器无法理解的语法，虽然在Postman上模拟的完整接口有?，但是Post请求真正发送的并不是自己简单拼接起来的
-                                data = "username="+ URLEncoder.encode(userName,"UTF-8")+"&password="+URLEncoder.encode(userPwd,"UTF-8");
-                                jsonUtil.handleUserdata(LoginUser,postUtil.sendPost(BaseUrl.getLoginPath(),data));
+                                keyString = "username="+ URLEncoder.encode(userName,"UTF-8")
+                                        +"&password="+URLEncoder.encode(userPwd,"UTF-8");
+                                jsonUtil.handleUserdata(LoginUser,postUtil.sendPost(BaseUrl.getLoginPath(),keyString));
                                 checkLogin();
                             } catch (UnsupportedEncodingException e) {
                                 e.printStackTrace();

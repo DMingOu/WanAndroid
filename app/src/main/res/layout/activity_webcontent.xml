@@ -22,6 +22,17 @@
     </android.support.design.widget.AppBarLayout>
 
 
+    <ProgressBar
+        android:id="@+id/pb_web_loading"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="match_parent"
+        android:layout_height="4dip"
+        android:progressDrawable="@drawable/shape_progressbar_web"
+        android:visibility="gone"
+        android:layout_marginTop="56dp"
+        />
+
+
     <WebView
         android:id="@+id/wv_content"
         android:layout_width="match_parent"

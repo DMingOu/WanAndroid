@@ -29,14 +29,15 @@
             android:id="@+id/et_search"
             android:background="@drawable/shape_editview_search"
             android:layout_width="match_parent"
-            android:layout_height="43sp"
-            android:textSize="18sp"
+            android:layout_height="46sp"
+            android:textSize="19sp"
             android:layout_marginStart="0dp"
             android:imeOptions="actionSearch"
             android:maxLines="1"
             android:singleLine="true"
             android:gravity="center"
-            android:hint="搜索文章关键词"/>
+            android:textStyle="bold"
+            android:hint="文章关键词,多个关键词请用空格隔开"/>
     </LinearLayout>
 
 

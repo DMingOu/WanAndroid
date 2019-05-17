@@ -1,4 +1,4 @@
-package com.example.odm.wanandroid.Application;
+package com.example.odm.wanandroid.application;
 
 import android.app.Application;
 import android.content.Context;

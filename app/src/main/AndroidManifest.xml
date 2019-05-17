@@ -10,28 +10,27 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" /> <!-- 读取网络状态 -->
 
     <application
-        android:name=".Application.MyApplication"
+        android:name=".application.MyApplication"
         android:allowBackup="true"
-        android:icon="@drawable/android_laucher_128"
+        android:icon="@drawable/laucher_whiteblue_128"
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name=".Activity.MainActivity">
+        <activity android:name=".activity.MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
         <activity
-            android:name=".Activity.LoginActivity"
+            android:name=".activity.LoginActivity"
             android:launchMode="singleTask" />
         <activity
-            android:name=".Activity.RegisterActivity"
+            android:name=".activity.RegisterActivity"
             android:launchMode="singleTask" />
-        <activity android:name=".Activity.WebContentActivity" />
-        <activity android:name=".Activity.Search_ArticleActivity" />
-        <activity android:name=".Activity.UserActivity"></activity>
+        <activity android:name=".activity.WebContentActivity" />
+        <activity android:name=".activity.Search_ArticleActivity" />
+        <activity android:name=".activity.UserActivity"></activity>
     </application>
 
 </manifest>

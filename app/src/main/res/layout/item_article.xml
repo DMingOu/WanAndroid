@@ -21,7 +21,6 @@
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
-
         <LinearLayout
             android:id="@+id/ll_author"
             android:layout_width="wrap_content"
@@ -33,7 +32,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:textSize="12sp"
-                android:textColor="@color/red"
+                android:textColor="@color/blue"
                 android:background="@drawable/shape_article_tv_superchaptername"
                 android:layout_marginRight="6dp"
                 android:paddingLeft="3dp"

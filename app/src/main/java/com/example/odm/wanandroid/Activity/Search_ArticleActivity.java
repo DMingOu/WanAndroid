@@ -1,4 +1,4 @@
-package com.example.odm.wanandroid.Activity;
+package com.example.odm.wanandroid.activity;
 
 import android.content.BroadcastReceiver;
 import android.content.ContentValues;
@@ -27,12 +27,12 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.example.odm.wanandroid.Adapter.ArticleAdapter;
-import com.example.odm.wanandroid.Db.ArticlebaseHelper;
+import com.example.odm.wanandroid.adapter.ArticleAdapter;
+import com.example.odm.wanandroid.db.ArticlebaseHelper;
 import com.example.odm.wanandroid.R;
-import com.example.odm.wanandroid.RecyclerViewNoBugLinearLayoutManager;
-import com.example.odm.wanandroid.Util.JsonUtil;
-import com.example.odm.wanandroid.Util.PostUtil;
+import com.example.odm.wanandroid.base.RecyclerViewNoBugLinearLayoutManager;
+import com.example.odm.wanandroid.util.JsonUtil;
+import com.example.odm.wanandroid.util.PostUtil;
 import com.example.odm.wanandroid.base.BaseUrl;
 import com.example.odm.wanandroid.bean.Article;
 import com.example.odm.wanandroid.bean.PageListData;
@@ -99,7 +99,7 @@ public class Search_ArticleActivity extends AppCompatActivity {
         ActionBar actionBar = getSupportActionBar();
         if (actionBar != null){
             actionBar.setDisplayHomeAsUpEnabled(true);
-            actionBar.setHomeAsUpIndicator(R.mipmap.ic_back_32);
+            actionBar.setHomeAsUpIndicator(R.mipmap.back_toolbar_32);
             actionBar.setTitle("搜索");
         }
 
@@ -142,12 +142,12 @@ public class Search_ArticleActivity extends AppCompatActivity {
                 if (actionId == EditorInfo.IME_ACTION_SEARCH) {
                     //点击搜索的时候隐藏软键盘
                     hideKeyboard(mSearchEt);
-                    // 在这里写搜索的操作,一般都是网络请求数据
                     keyword  = mSearchEt.getText().toString();
                     load_times = 0; //每次点击搜索键重置加载次数为0，展示第一页搜索的数据
                     articleList.clear();
                     isloading = true;
                     isRefresh = false;
+                    // 搜索的操作--网络请求数据
                     new ArticleList_SearchTask().execute(BaseUrl.getSearchPath());
                     return true;
                 }
@@ -177,21 +177,22 @@ public class Search_ArticleActivity extends AppCompatActivity {
             }
         });
         //设置ArticleAdapter的每个子项的长按点击事件--跳转到网页
-        articleAdapter.setOnItemLongClickListener(new ArticleAdapter.ArticleRecyclerViewOnItemLongClickListener(){
-            @Override
-            public boolean onArticleItemLongClick (View view, int position) {
-                SQLiteDatabase db = dbHelper.getWritableDatabase();
-                ContentValues values = new ContentValues();    //创建存放数据的ContentValues对象
-                values.put("title",articleList.get(position).getTitle());
-                db.insert("Article",null,values); //数据库执行插入命令
-                db.close();//关闭数据库
-                Intent intent = new Intent(Search_ArticleActivity.this,WebContentActivity.class);
-                intent.putExtra("title",articleList.get(position).getTitle());
-                intent.putExtra("url",articleList.get(position).getLink());
-                startActivity(intent);
-                return true;
-            }
-        } );
+//        articleAdapter.setOnItemLongClickListener(new ArticleAdapter.ArticleRecyclerViewOnItemLongClickListener(){
+//            @Override
+//            public boolean onArticleItemLongClick (View view, int position) {
+//                SQLiteDatabase db = dbHelper.getWritableDatabase();
+//                ContentValues values = new ContentValues();    //创建存放数据的ContentValues对象
+//                values.put("title",articleList.get(position).getTitle());
+//                db.insert("Article",null,values); //数据库执行插入命令
+//                db.close();//关闭数据库
+//                Intent intent = new Intent(Search_ArticleActivity.this,WebContentActivity.class);
+//                Intent intent = new Intent(Search_ArticleActivity.this,WebContentActivity.class);
+//                intent.putExtra("title",articleList.get(position).getTitle());
+//                intent.putExtra("url",articleList.get(position).getLink());
+//                startActivity(intent);
+//                return true;
+//            }
+//        } );
     }
 
 
@@ -216,18 +217,16 @@ public class Search_ArticleActivity extends AppCompatActivity {
                     }
                     String keywordString = "k=" + URLEncoder.encode(keyword, "UTF-8");
                     resultdata = postUtil.sendPost(params[0] + i + "/json", keywordString);
-
             }
             } catch (UnsupportedEncodingException e) {
                 e.printStackTrace();
             }
-
             return resultdata;
         }
 
 
         /**
-         * 为Recycler的Adapter装填数据
+         * 为RecycleView的Adapter装填数据
          * @param resultdata  文章列表数据，doInbackground方法返回的结果
          */
         @Override

@@ -1,4 +1,4 @@
-package com.example.odm.wanandroid.Activity;
+package com.example.odm.wanandroid.activity;
 
 import android.content.Context;
 import android.content.Intent;
@@ -14,7 +14,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.example.odm.wanandroid.R;
-import com.example.odm.wanandroid.Util.SharedPreferencesUtil;
+import com.example.odm.wanandroid.util.SharedPreferencesUtil;
 
 public class UserActivity extends AppCompatActivity {
 
@@ -47,7 +47,7 @@ public class UserActivity extends AppCompatActivity {
         ActionBar actionBar = getSupportActionBar();
         if (actionBar != null){
             actionBar.setDisplayHomeAsUpEnabled(true);
-            actionBar.setHomeAsUpIndicator(R.mipmap.ic_back_32);
+            actionBar.setHomeAsUpIndicator(R.mipmap.back_toolbar_32);
             actionBar.setTitle("我");
         }
     }

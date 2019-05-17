@@ -1,4 +1,4 @@
-package com.example.odm.wanandroid.Db;
+package com.example.odm.wanandroid.db;
 
 import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;

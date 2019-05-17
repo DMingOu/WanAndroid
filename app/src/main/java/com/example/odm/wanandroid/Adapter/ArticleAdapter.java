@@ -1,4 +1,4 @@
-package com.example.odm.wanandroid.Adapter;
+package com.example.odm.wanandroid.adapter;
 
 import android.content.ContentValues;
 import android.content.Context;
@@ -14,9 +14,9 @@ import android.view.ViewGroup;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
-import com.example.odm.wanandroid.Activity.MainActivity;
-import com.example.odm.wanandroid.Activity.Search_ArticleActivity;
-import com.example.odm.wanandroid.Db.ArticlebaseHelper;
+import com.example.odm.wanandroid.activity.MainActivity;
+import com.example.odm.wanandroid.activity.Search_ArticleActivity;
+import com.example.odm.wanandroid.db.ArticlebaseHelper;
 import com.example.odm.wanandroid.R;
 import com.example.odm.wanandroid.bean.Article;
 
@@ -33,8 +33,8 @@ public class ArticleAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
     private List<Article> mArticleList;
     private Context mContext;
 
-    private ArticleRecyclerViewOnItemClickListener onArticleItemClickListener;
-    private ArticleRecyclerViewOnItemLongClickListener onArticleItemLongClickListener;
+    private ArticleRecyclerViewOnItemClickListener onArticleItemClickListener;//轻点击
+//    private ArticleRecyclerViewOnItemLongClickListener onArticleItemLongClickListener;//长按
 
     public ArticleAdapter(List<Article> ArticleList) {
         mArticleList = ArticleList;
@@ -73,7 +73,7 @@ public class ArticleAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
         public FooterViewHolder(View view){
             super(view);
-            mLoadPb = (ProgressBar) view.findViewById(R.id.pb_loading);
+            mLoadPb = (ProgressBar) view.findViewById(R.id.pb_loadingmore);
             mLoadTv = (TextView)view.findViewById(R.id.tv_loading);
         }
     }
@@ -132,11 +132,12 @@ public class ArticleAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             if (cursor.moveToFirst()) {
                 do {
                     String title = cursor.getString(cursor.getColumnIndex("title"));
-                    if (article.getTitle().equals(title)) { //数据库有相同的标题（读过的)，设置为灰色，否则设置为黑色
-                        newHolder.mTitleTv.setTextColor(Color.parseColor("#999999"));
+                    //数据库有相同的标题（读过的)，设置为灰色，否则设置为黑色
+                    if (article.getTitle().equals(title)) {
+                        newHolder.mTitleTv.setTextColor(Color.parseColor("#999999"));//灰
                         break;
                     } else {
-                        newHolder.mTitleTv.setTextColor(Color.parseColor("#000000"));
+                        newHolder.mTitleTv.setTextColor(Color.parseColor("#000000"));//黑
                     }
                 } while (cursor.moveToNext());
             }
@@ -155,7 +156,7 @@ public class ArticleAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             //设置Tag方便进行点击事件数据的处理
             newHolder.mItemArcticleCV.setTag(position);
 
-            //若文章已有被点击属性，则被设为灰色已读
+            //若文章已被点击，则被设为灰色已读
             holder.itemView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
@@ -171,17 +172,18 @@ public class ArticleAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                     }
                 }
             });
-            holder.itemView.setOnLongClickListener(new View.OnLongClickListener() {
-                @Override
-                public boolean onLongClick(View v) {
-                    article.setClicked(true);
-                    if (holder instanceof ItemArticleViewHolder) {
-                        ItemArticleViewHolder newHolder = (ItemArticleViewHolder) holder;
-                        newHolder.mTitleTv.setTextColor(Color.parseColor("#999999"));
-                    }
-                    return onArticleItemLongClickListener != null && onArticleItemLongClickListener.onArticleItemLongClick(v, (Integer) v.getTag());
-                }
-            });
+            //若文章被长按，则被设为灰色已读
+//            holder.itemView.setOnLongClickListener(new View.OnLongClickListener() {
+//                @Override
+//                public boolean onLongClick(View v) {
+//                    article.setClicked(true);
+//                    if (holder instanceof ItemArticleViewHolder) {
+//                        ItemArticleViewHolder newHolder = (ItemArticleViewHolder) holder;
+//                        newHolder.mTitleTv.setTextColor(Color.parseColor("#999999"));
+//                   }
+//                    return onArticleItemLongClickListener != null && onArticleItemLongClickListener.onArticleItemLongClick(v, (Integer) v.getTag());
+//                }
+//            });
         }
     }
 
@@ -202,7 +204,7 @@ public class ArticleAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
     /**
      * 上滑到最后的item时返回0，否则返回1
      * @param position
-     * @return
+     * @return itemtype
      */
     @Override
     public int getItemViewType(int position) {
@@ -218,34 +220,16 @@ public class ArticleAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         return mArticleList.size() ;
     }
 
-    /**
-     * 删除RecycleView某项item
-     * @param position
-     */
-    public void removeItem(int position){
-        mArticleList.remove(position);//删除数据源,移除集合中当前下标的数据
-        notifyItemRemoved(position);//刷新被删除的地方
-        notifyItemRangeChanged(position,getItemCount()); //刷新被删除数据，以及其后面的数据
-    }
-
-    /**
-     * 删除RecycleView从第一项到最后一项
-     */
-    public void removeAllItem () {
-        notifyItemRangeRemoved(0,getItemCount());
-        articleList.clear();
-        notifyItemRangeChanged(0, articleList.size());
-    }
 
     /*设置点击事件监视*/
     public void setRecyclerViewOnItemClickListener(ArticleRecyclerViewOnItemClickListener onArticleItemClickListener) {
         this.onArticleItemClickListener = onArticleItemClickListener;
     }
-
-    /*设置长按事件监视*/
-    public void setOnItemLongClickListener(ArticleRecyclerViewOnItemLongClickListener onArticleItemLongClickListener) {
-        this.onArticleItemLongClickListener = onArticleItemLongClickListener;
-    }
+//
+//    /*设置长按事件监视*/
+//    public void setOnItemLongClickListener(ArticleRecyclerViewOnItemLongClickListener onArticleItemLongClickListener) {
+//        this.onArticleItemLongClickListener = onArticleItemLongClickListener;
+//    }
 
     /**
      * 接口：子项点击事件接口
@@ -260,11 +244,11 @@ public class ArticleAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
     /**
      * 接口：子项长按点击事件
      */
-    public interface ArticleRecyclerViewOnItemLongClickListener {
-
-        boolean onArticleItemLongClick(View view, int position);
-
-    }
+//    public interface ArticleRecyclerViewOnItemLongClickListener {
+//
+//        boolean onArticleItemLongClick(View view, int position);
+//
+//    }
 
 
 }

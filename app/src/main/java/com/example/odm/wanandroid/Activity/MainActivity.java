@@ -1,4 +1,4 @@
-package com.example.odm.wanandroid.Activity;
+package com.example.odm.wanandroid.activity;
 
 import android.content.BroadcastReceiver;
 import android.content.ContentValues;
@@ -10,7 +10,6 @@ import android.net.ConnectivityManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.Looper;
 import android.os.Message;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.ActionBar;
@@ -18,30 +17,29 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
-import android.util.Log;
+import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Toast;
 
-import com.example.odm.wanandroid.Adapter.ArticleAdapter;
-import com.example.odm.wanandroid.Application.MyApplication;
-import com.example.odm.wanandroid.Db.ArticlebaseHelper;
-import com.example.odm.wanandroid.HandlerManger;
 import com.example.odm.wanandroid.R;
-import com.example.odm.wanandroid.RecyclerViewNoBugLinearLayoutManager;
-import com.example.odm.wanandroid.Util.GetUtil;
-import com.example.odm.wanandroid.Util.JsonUtil;
-import com.example.odm.wanandroid.Util.PostUtil;
-import com.example.odm.wanandroid.Util.SharedPreferencesUtil;
+import com.example.odm.wanandroid.adapter.ArticleAdapter;
+import com.example.odm.wanandroid.application.MyApplication;
 import com.example.odm.wanandroid.base.BaseUrl;
+import com.example.odm.wanandroid.base.HandlerManger;
+import com.example.odm.wanandroid.base.RecyclerViewNoBugLinearLayoutManager;
 import com.example.odm.wanandroid.bean.Article;
 import com.example.odm.wanandroid.bean.PageListData;
 import com.example.odm.wanandroid.bean.User;
+import com.example.odm.wanandroid.db.ArticlebaseHelper;
 import com.example.odm.wanandroid.receiver.InterRecevier;
+import com.example.odm.wanandroid.util.GetUtil;
+import com.example.odm.wanandroid.util.JsonUtil;
+import com.example.odm.wanandroid.util.PostUtil;
+import com.example.odm.wanandroid.util.SharedPreferencesUtil;
 
-import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -60,7 +58,8 @@ public class MainActivity extends AppCompatActivity {
     private String resultdata = "";
     private ArticlebaseHelper dbHelper;
     private SwipeRefreshLayout mSwipeRefreshLayout;
-    private BroadcastReceiver receiver = new InterRecevier();
+    private BroadcastReceiver receiver = new InterRecevier(); //广播接收器
+    private long exitTime=0; //记录第一次返回键退出的初始时间
     private boolean mIsRefreshing=false;
     private static boolean isLogin = false;
     private int load_times = 0; //加载的次数，被用于发送文章请求，控制页码
@@ -122,7 +121,7 @@ public class MainActivity extends AppCompatActivity {
      */
     protected void initArticleAdapter(){
         articleAdapter = new ArticleAdapter(articleList);
-        //设置ArticleAdapter的每个子项的点击事件--往数据增加已读文章的标题，跳转到对应网页
+        //设置ArticleAdapter的每个子项的点击事件--在数据库增加已读文章的标题，跳转到对应网页
         articleAdapter.setRecyclerViewOnItemClickListener(new ArticleAdapter.ArticleRecyclerViewOnItemClickListener() {
             @Override
             public void onArticleItemClick(View view, int position) {
@@ -138,21 +137,21 @@ public class MainActivity extends AppCompatActivity {
             }
         });
         //设置ArticleAdapter的每个子项的长按点击事件--跳转到网页
-        articleAdapter.setOnItemLongClickListener(new ArticleAdapter.ArticleRecyclerViewOnItemLongClickListener(){
-            @Override
-            public boolean onArticleItemLongClick (View view, int position) {
-                SQLiteDatabase db = dbHelper.getWritableDatabase();
-                ContentValues values = new ContentValues();    //创建存放数据的ContentValues对象
-                values.put("title",articleList.get(position).getTitle());
-                db.insert("Article",null,values); //数据库执行插入命令
-                db.close();
-                Intent intent = new Intent(MainActivity.this,WebContentActivity.class);
-                intent.putExtra("title",articleList.get(position).getTitle());
-                intent.putExtra("url",articleList.get(position).getLink());
-                startActivity(intent);
-                return true;
-            }
-        } );
+//        articleAdapter.setOnItemLongClickListener(new ArticleAdapter.ArticleRecyclerViewOnItemLongClickListener(){
+//            @Override
+//            public boolean onArticleItemLongClick (View view, int position) {
+//                SQLiteDatabase db = dbHelper.getWritableDatabase();
+//                ContentValues values = new ContentValues();    //创建存放数据的ContentValues对象
+//                values.put("title",articleList.get(position).getTitle());
+//                db.insert("Article",null,values); //数据库执行插入命令
+//                db.close();
+//                Intent intent = new Intent(MainActivity.this,WebContentActivity.class);
+//                intent.putExtra("title",articleList.get(position).getTitle());
+//                intent.putExtra("url",articleList.get(position).getLink());
+//                startActivity(intent);
+//                return true;
+//            }
+//        } );
     }
     protected void initViews(){
         Toolbar toolbar_main = (Toolbar) findViewById(R.id.tool_bar_main);
@@ -161,7 +160,7 @@ public class MainActivity extends AppCompatActivity {
         if (actionBar != null){
             //使左上角图标是否显示，如果设成false，则没有程序图标，仅仅就个标题，否则，显示应用程序图标，对应id为android.R.id.home，对应ActionBar.DISPLAY_SHOW_HOME
             actionBar.setDisplayHomeAsUpEnabled(true);
-            actionBar.setHomeAsUpIndicator(R.mipmap.user_32);
+            actionBar.setHomeAsUpIndicator(R.mipmap.ic_user_toolbar_32);
         }
         mRecyclerView = (RecyclerView)findViewById(R.id.rv_item_article);
 
@@ -199,7 +198,7 @@ public class MainActivity extends AppCompatActivity {
         );
         //下滑刷新
         mSwipeRefreshLayout = (SwipeRefreshLayout) findViewById(R.id.swipe_refresh_layout_main); //下拉刷新布局
-        mSwipeRefreshLayout.setColorSchemeColors(Color.parseColor("#009a61"),Color.parseColor("#FF0000"));// green ,red
+        mSwipeRefreshLayout.setColorSchemeColors(Color.parseColor("#009a61"),Color.parseColor("#FF0000"));// 进度条的颜色green ,red
         mSwipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             @Override
             public void onRefresh() {
@@ -217,29 +216,21 @@ public class MainActivity extends AppCompatActivity {
      */
     public void checkStatus() {
         user = new User();
-        //判断是否已经登录
+        //isLogin变量判断APP目前是否已经登录
         if(!isLogin) {
-            try {
-                //判断本地的SharePreferences是否为空
-                final String data = SharedPreferencesUtil.getLoginSharedPreferences(MyApplication.getContext());
-                Log.e("data",data);
-                if(! data.equals("")) {
-                    //利用本地的SharePreferences自动登录
-                    new Thread() {
-                        public void run() {
-                            //发送POST登录请求并处理返回的JSON数据
-                            new JsonUtil().handleUserdata(user, new PostUtil().sendPost(BaseUrl.getLoginPath(), data));
-                            if (user.getErrorCode() == 0) {
-                                Looper.prepare();
-                                Toast.makeText(MainActivity.this, "自动登录成功", Toast.LENGTH_SHORT).show();
-                                isLogin = true;
-                                Looper.loop();
-                            }
+            //判断本地的SharePreferences是否为空
+            final String data = SharedPreferencesUtil.getLoginSharedPreferences(MyApplication.getContext());
+            if(! data.equals("")) {
+                //利用本地的SharePreferences自动登录
+                new Thread() {
+                    public void run() {
+                        //发送POST登录请求并处理返回的JSON数据
+                        new JsonUtil().handleUserdata(user, new PostUtil().sendPost(BaseUrl.getLoginPath(), data));
+                        if (user.getErrorCode() == 0) {
+                            isLogin = true;//登录状态更新为成功登录
                         }
-                    }.start();
-                }
-            } catch (UnsupportedEncodingException e) {
-                e.printStackTrace();
+                    }
+                }.start();
             }
         }
     }
@@ -279,9 +270,8 @@ public class MainActivity extends AppCompatActivity {
             return resultdata;
          }
 
-
         /**
-         * 为Recycler的Adapter装填数据
+         * 为RecycleView的Adapter装填数据
          * @param resultdata  关于文章列表的JSON数据，doInbackground方法返回的结果
          */
         @Override
@@ -401,6 +391,30 @@ public class MainActivity extends AppCompatActivity {
         IntentFilter filter = new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION); //动态注册广播
         this.registerReceiver(receiver,filter);//注册广播
     }
+
+    @Override
+    public boolean onKeyDown(int keyCode,KeyEvent event){
+        if(keyCode== KeyEvent.KEYCODE_BACK){
+            exit();
+            return false;
+        }
+        return super.onKeyDown(keyCode,event);
+    }
+
+    /**
+     * 控制返回键连续点击才两次
+     * 退出若两次点击返回键时间小于2秒就退出
+     */
+    private void exit(){
+        if((System.currentTimeMillis()-exitTime)>2000){
+            Toast.makeText(getApplicationContext(),
+                    "再按一次退出程序",Toast.LENGTH_SHORT).show();
+            exitTime=System.currentTimeMillis();
+        }else{
+                finish();
+                System.exit(0);
+            }
+        }
 }
 
 

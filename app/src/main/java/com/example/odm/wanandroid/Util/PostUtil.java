@@ -1,4 +1,4 @@
-package com.example.odm.wanandroid.Util;
+package com.example.odm.wanandroid.util;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -10,6 +10,7 @@ import java.net.ProtocolException;
 import java.net.URL;
 
 /**
+ * 工具类：处理Post网络请求
  * Created by ODM on 2019/5/2.
  */
 

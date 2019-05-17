@@ -1,5 +1,6 @@
-package com.example.odm.wanandroid.Activity;
+package com.example.odm.wanandroid.activity;
 
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
 import android.os.Looper;
@@ -17,14 +18,15 @@ import android.text.style.ForegroundColorSpan;
 import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.odm.wanandroid.R;
-import com.example.odm.wanandroid.Util.JsonUtil;
-import com.example.odm.wanandroid.Util.PostUtil;
+import com.example.odm.wanandroid.util.JsonUtil;
+import com.example.odm.wanandroid.util.PostUtil;
 import com.example.odm.wanandroid.base.BaseUrl;
 import com.example.odm.wanandroid.bean.User;
 
@@ -65,7 +67,7 @@ public class RegisterActivity extends AppCompatActivity {
         if (actionBar != null){
             //使左上角图标是否显示，如果设成false，则没有程序图标，仅仅就个标题，否则，显示应用程序图标，对应id为android.R.id.home，对应ActionBar.DISPLAY_SHOW_HOME
             actionBar.setDisplayHomeAsUpEnabled(true);
-            actionBar.setHomeAsUpIndicator(R.mipmap.ic_back_32);
+            actionBar.setHomeAsUpIndicator(R.mipmap.back_toolbar_32);
             actionBar.setTitle("注册");
         }
 
@@ -107,6 +109,7 @@ public class RegisterActivity extends AppCompatActivity {
         int id = v.getId();
         switch (id) {
             case R.id.bt_register:
+                hideKeyboard(mRgtEt_password_confirm);//点击注册键隐藏键盘，让用户可以更清楚看到提醒
                 //获取用户名
                 final String username = mRgtEt_username.getText().toString();
                 //获取用户密码和确认密码
@@ -136,7 +139,8 @@ public class RegisterActivity extends AppCompatActivity {
                              final String data;
                              try {
                                  //"?username="是错误的，会导致网络返回码400，出现服务器无法理解的语法，虽然在Postman上模拟的完整接口有?，但是Post请求真正发送的并不是自己简单拼接起来的
-                                 data = "username="+ URLEncoder.encode(username,"UTF-8")+"&password="+URLEncoder.encode(userpwd,"UTF-8")+"&repassword="+URLEncoder.encode(userpwd_confirm,"UTF-8");
+                                 data = "username="+ URLEncoder.encode(username,"UTF-8")+"&password="+URLEncoder.encode(userpwd,"UTF-8")
+                                         +"&repassword="+URLEncoder.encode(userpwd_confirm,"UTF-8");
                                  jsonUtil.handleUserdata(RgtUser,postUtil.sendPost(BaseUrl.getRgtPath(),data));
                                  checkRegister();
                              } catch (UnsupportedEncodingException e) {
@@ -177,6 +181,16 @@ public class RegisterActivity extends AppCompatActivity {
             default:
         }
         return true;
+    }
+
+    /**
+     * 隐藏软键盘
+     * @param view ：一般是EditText使用
+     */
+    public void hideKeyboard(View view) {
+        InputMethodManager manager = (InputMethodManager) view.getContext()
+                .getSystemService(Context.INPUT_METHOD_SERVICE);
+        manager.hideSoftInputFromWindow(view.getWindowToken(), 0);
     }
 
 }
