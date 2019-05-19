@@ -58,12 +58,10 @@ public class MainActivity extends AppCompatActivity {
     private ArticleAdapter articleAdapter;
     private RecyclerView mRecyclerView;
     private PageListData pageListData;
-    private String articleJsondata  = "";
     private String resultArticledata = ""; // 返回的文章json数据
     private String resultBannerdata = "";// 返回的banner的Json数据
     private ArticlebaseHelper dbHelper;
     private SwipeRefreshLayout mSwipeRefreshLayout;
-
     private BannerView mBannerView;
     private BannerViewAdapter mBannerAdapter;
     private List<Banner> bannerList = new ArrayList<>();
@@ -71,7 +69,6 @@ public class MainActivity extends AppCompatActivity {
     private long exitTime=0; //记录第一次返回键退出的初始时间
     private boolean mIsRefreshing=false;
     private static boolean isLogin = false;
-    private int load_times = 0; //加载的次数，被用于发送文章请求，控制页码
     private boolean isRefresh = false;
     private boolean isloading = false;
     private static boolean  isHasMore_AtricleList = true;
@@ -86,10 +83,10 @@ public class MainActivity extends AppCompatActivity {
                     mSwipeRefreshLayout.post(new Runnable() {
                         @Override
                         public void run() {
-                            load_times = 0;
                             mSwipeRefreshLayout.setRefreshing(true);
-                            new ArticleListTask().execute(BaseUrl.getArticleListPath());
+                            isloading = true;
                             new BannerAsyncTask().execute(BaseUrl.getBannerPath());
+                            new ArticleListTask().execute(BaseUrl.getArticleListPath());
                         }
                     });
                 }
@@ -105,8 +102,8 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main_ariticle);
         dbHelper = new ArticlebaseHelper(this,"Article.db",null,1);
         HandlerManger.getInstance().setHandler(handler);
-        initBoardcaster();
-        initViews();
+        initBoardcaster();//初始化广播
+        initViews();//初始化界面控件
         initArticleAdapter();
         isloading = true;
         checkStatus(); //检查登录状态
@@ -191,8 +188,7 @@ public class MainActivity extends AppCompatActivity {
                     isloading = true;
                     isRefresh = false;
                     new ArticleListTask().execute(BaseUrl.getArticleListPath());
-                    mBannerView.cancelScroll();//关闭Banner的自动滚动
-                    mBannerView.startScroll();//重新启动Banner的自动滚动
+
                 }
             }
         });
@@ -216,26 +212,14 @@ public class MainActivity extends AppCompatActivity {
         mSwipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             @Override
             public void onRefresh() {
-                load_times = 0;
                 //下滑刷新，新开一个Task对象--重新请求网络数据
                 isloading = false;
                 isRefresh = true;
                 new ArticleListTask().execute(BaseUrl.getArticleListPath());
-                mBannerView.cancelScroll();//关闭Banner的自动滚动
-                mBannerView.startScroll();//重新启动Banner的自动滚动
+
             }
         });
-
-//        View header = LayoutInflater.from(this).inflate(R.layout.item_banner,null);
-//        mBannerView = (BannerView) header.findViewById(R.id.item_banner);
-//        //设置banner的高度为手机屏幕的四分之一
-//        DisplayMetrics dm = getResources().getDisplayMetrics();
-//        int heigth = dm.heightPixels;
-//        int width = dm.widthPixels;
-//        mBannerView.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,heigth/4));
-//        articleAdapter.setHeaderView(mBannerView);
-//        mBannerView.cancelScroll();
-//        mBannerAdapter.notifyDataSetChanged();
+        //实例化banner
         mBannerView = (BannerView) LayoutInflater.from(this)
                 .inflate(R.layout.view_banner,null);
         }
@@ -287,14 +271,14 @@ public class MainActivity extends AppCompatActivity {
          */
         @Override
         protected String doInBackground(String... params) {
-            //mArticleList.clear();
-            //resultBannerdata = GetUtil.sendGet(BaseUrl.getBannerPath(),resultBannerdata);
             for (int i = 0; i < 1; i++) {
                 //初始化文章列表里面的数据
-                //publishProgress(i);
-               if(isloading ) {
-                   i = load_times + i;//加载更多时，令i保持在最新要出来的一页
+               if(isloading && ! isRefresh ) {
+                   //加载更多时，令i保持在最新要出来的一页
+                   int index = pageListDataList.size();
+                   i = index + i;
                }
+                String articleJsondata  = "";
                 resultArticledata =  GetUtil.sendGet(params[0] + i + "/json", articleJsondata);
             }
             return resultArticledata;
@@ -306,19 +290,17 @@ public class MainActivity extends AppCompatActivity {
          */
         @Override
         protected void onPostExecute(String resultdata) {
-            //处理banner数据，填充bannerList
-//            JsonUtil.handleBannerta(bannerList,resultBannerdata);
-//            mBannerAdapter = new BannerViewAdapter(bannerList,bitmapList);
-//            mBannerView.setAdapter(mBannerAdapter);
-//            mBannerAdapter.notifyDataSetChanged();
             //Article
             String resultJsondata = resultdata;
             super.onPostExecute(resultJsondata);
+            System.out.println(resultJsondata);
             mRecyclerView.setAdapter(articleAdapter);
             pageListData = new PageListData();
             JsonUtil.handleArtcileData(mArticleList, pageListData, resultJsondata,isRefresh);
             articleAdapter.notifyData(mArticleList);
-            pageListDataList.add(pageListData);//页码里面有几个对象，就代表文章列表有几页
+            if(isloading && ! isRefresh) {
+                pageListDataList.add(pageListData);//页码里面有几个对象，就代表文章列表有几页
+            }
             resultJsondata = "";
             //articleList，在外面的一些方法会调用到它
             articleList.addAll(mArticleList);
@@ -336,11 +318,14 @@ public class MainActivity extends AppCompatActivity {
             if(! isloading && isRefresh ) {
                 //下滑刷新后定位回第一篇文章
                 mRecyclerView.scrollToPosition(0);
+                mBannerView.cancelScroll();//关闭Banner的自动滚动
+                mBannerView.startScroll();//重新启动Banner的自动滚动
                 isRefresh = false;
                 isloading = false;
             }else{
                 //上拉加载后
-                load_times++;//加载次数+1
+                mBannerView.cancelScroll();//关闭Banner的自动滚动
+                mBannerView.startScroll();//重新启动Banner的自动滚动
                 isRefresh = false;
                 isloading = false;
                 //上拉加载后，定位到加载出来的位置附近。每一页都有20篇文章
@@ -357,7 +342,8 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         protected String doInBackground(String... params) {
-            resultBannerdata = GetUtil.sendGet(BaseUrl.getBannerPath(),resultBannerdata);
+            String bannerdata = "";
+            resultBannerdata = GetUtil.sendGet(BaseUrl.getBannerPath(),bannerdata);
             return resultBannerdata;
         }
 
@@ -372,9 +358,6 @@ public class MainActivity extends AppCompatActivity {
         }
 
     }
-
-
-
 
     /**
      * 给标题栏加载menu菜单布局
@@ -400,7 +383,6 @@ public class MainActivity extends AppCompatActivity {
                 Intent intent_user = new Intent();
                 intent_user.setClass(MainActivity.this,UserActivity.class);
                 startActivity(intent_user);
-                //Toast.makeText(this,"即将打开用户页面",Toast.LENGTH_SHORT).show();
                 break;
             case R.id.item_toolbar_search:
                 Intent intent_search = new Intent();

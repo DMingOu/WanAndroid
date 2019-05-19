@@ -161,14 +161,12 @@ public class WrapperImageView extends ImageView {
                 msg.obj = bitmap;
                 msg.what = GET_DATA_SUCCESS;
                 handler.sendMessage(msg);
-                Log.e("MyImageView","使用缓存图片");
             } catch (FileNotFoundException e) {
                 e.printStackTrace();
             }
         }else {
             //使用网络图片
             useNetWorkImage();
-            Log.e("MyImageView","使用网络图片");
         }
     }
 
@@ -203,7 +201,7 @@ public class WrapperImageView extends ImageView {
         for (String string : strings) {
             urlStr2.append(string);
         }
-        Log.e("MyImageView","文件名："+urlStr2.toString());
+        Log.e("WrapperImageView","文件名："+urlStr2.toString());
         return urlStr2.toString();
     }
 
@@ -254,10 +252,7 @@ public class WrapperImageView extends ImageView {
         int realHeight = realImageViewHeight();
 
         int outWidth = options.outWidth;
-        Log.e("网络图片实际的宽度", String.valueOf(outWidth));
         int outHeight = options.outHeight;
-        Log.e("网络图片实际的高度", String.valueOf(outHeight));
-
         //获取比率最大的那个
         if (outWidth > realWith || outHeight > realHeight) {
             int withRadio = Math.round(outWidth / realWith);
@@ -292,7 +287,6 @@ public class WrapperImageView extends ImageView {
             //获取屏幕的宽度
             width = displayMetrics.widthPixels;
         }
-        Log.e("ImageView实际的宽度", String.valueOf(width));
         return width;
     }
 
@@ -319,7 +313,6 @@ public class WrapperImageView extends ImageView {
             //获取ImageView高度的最大值
             height = displayMetrics.heightPixels;
         }
-        Log.e("ImageView实际的高度", String.valueOf(height));
         return height;
     }
 }

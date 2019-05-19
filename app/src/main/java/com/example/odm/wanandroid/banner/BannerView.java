@@ -6,7 +6,6 @@ import android.os.Message;
 import android.support.annotation.NonNull;
 import android.support.v4.view.ViewPager;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.MotionEvent;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
@@ -21,6 +20,7 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 /**
+ * BannerView --Banner控件属性原点布局
  * Created by ODM on 2019/5/18.
  */
 
@@ -95,7 +95,6 @@ public class BannerView extends FrameLayout implements ViewPager.OnPageChangeLis
         this.mAdapter_BannerViewBase = adapter;
         mPointCount = mAdapter_BannerViewBase.getSize();
         mViewPager.setAdapter(mAdapter_BannerViewBase);
-        Log.d("几个点", String.valueOf(mPointCount*100));
         initPoint();
         /**
          *  防止第二次刷新后 显示空白页面

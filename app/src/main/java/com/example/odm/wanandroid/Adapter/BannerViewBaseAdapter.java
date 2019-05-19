@@ -1,7 +1,6 @@
 package com.example.odm.wanandroid.adapter;
 
 import android.support.v4.view.PagerAdapter;
-import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 
@@ -35,7 +34,6 @@ public abstract class BannerViewBaseAdapter extends PagerAdapter {
 
     @Override
     public Object instantiateItem(ViewGroup container, int position) {
-        Log.e("I am postion ", String.valueOf(position));
         if (getSize() != 0) {
             if (mList.size() <= (position % getSize())) {
                 for (int i = mList.size();i <= position % getSize();++i) {
