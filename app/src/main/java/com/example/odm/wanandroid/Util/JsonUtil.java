@@ -6,6 +6,7 @@ import android.database.sqlite.SQLiteDatabase;
 import android.util.Log;
 
 import com.example.odm.wanandroid.application.MyApplication;
+import com.example.odm.wanandroid.bean.Banner;
 import com.example.odm.wanandroid.db.ArticlebaseHelper;
 import com.example.odm.wanandroid.bean.Article;
 import com.example.odm.wanandroid.bean.PageListData;
@@ -58,7 +59,7 @@ public class JsonUtil {
     public static void handleArtcileData(List<Article> articleList , PageListData pageListData, String acceptdata ,boolean isRefresh) {
         try{
             if(acceptdata == null){
-                System.out.println("数据为空");
+                System.out.println("Article数据为空");
             }else {
                 ArticlebaseHelper dbhelper = new ArticlebaseHelper(MyApplication.getContext(),"Article.db",null,1);
                 SQLiteDatabase db = dbhelper.getReadableDatabase();
@@ -104,6 +105,34 @@ public class JsonUtil {
         }
 
     }
+
+    public static void handleBannerta(List<Banner> bannerList, String acceptdata){
+        try {
+            if(acceptdata == null){
+                System.out.println("banner数据为空");
+            }else {
+                Log.d("banner数据",acceptdata);
+                JSONObject value = new JSONObject(acceptdata);
+                JSONArray data = value.getJSONArray("data");
+                for (int i = 0; i < data.length(); i++) {
+                    JSONObject content = data.getJSONObject(i);
+                    int id = content.getInt("id");
+                    String url = content.getString("url");
+                    Banner banner = new Banner(content.getString("title"), content.getString("imagePath"));
+                    banner.setId(id);
+                    banner.setUrl(url);
+                    bannerList.add(banner);
+                }
+            }
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+    }
+
+
+
+
+
 
     /**
      * 搜索接口返回的数据，title属性带有<em class='highlight'>与</em>，不让它们显示在标题上

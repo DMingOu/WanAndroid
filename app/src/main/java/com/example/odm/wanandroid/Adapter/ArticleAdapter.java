@@ -32,6 +32,7 @@ public class ArticleAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
     private List<Article> mArticleList;
     private Context mContext;
+    private View mHeaderView;
 
     private ArticleRecyclerViewOnItemClickListener onArticleItemClickListener;//轻点击
 //    private ArticleRecyclerViewOnItemLongClickListener onArticleItemLongClickListener;//长按
@@ -43,7 +44,9 @@ public class ArticleAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
     private ArticlebaseHelper  dbhelper;
     private List<Article> articleList = new ArrayList<>();
 
+    private static final int ITEM_TYPE_HEADER = -1;
     public static final int ITEM_TYPE_FOOTER = 0; //是否到达底部的状态量
+    public static final int ITEM_TYPE_NORMAL = 1;
 
     public  static  class ItemArticleViewHolder extends RecyclerView.ViewHolder{
         private CardView mItemArcticleCV;
@@ -89,11 +92,23 @@ public class ArticleAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         }
     }
 
+    public class HeaderViewHolder extends RecyclerView.ViewHolder{
+
+        private HeaderViewHolder(View view) {
+            super(view);
+            return;
+        }
+    }
+
     //将文章item的布局加载进ViewHolder中
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         if(mContext == null){
             mContext = parent.getContext();
+        }
+        //头布局的加载
+        if (mHeaderView != null && viewType == ITEM_TYPE_HEADER){
+            return new HeaderViewHolder(mHeaderView);
         }
         //如果达到最后一个item就加载 "加载更多" or "没有更多"
         if(viewType == ITEM_TYPE_FOOTER) {
@@ -113,6 +128,9 @@ public class ArticleAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
     @Override
     public void onBindViewHolder(final RecyclerView.ViewHolder holder, int position){
+        //位置是第一个
+        if(getItemViewType(position) == ITEM_TYPE_HEADER) return;
+        final int pos = getRealPosition(holder);
         //传进来的是底部加载的holder
         if(holder instanceof  FooterViewHolder){
             ((FooterViewHolder) holder).mLoadTv.setText("正在加载中");
@@ -124,7 +142,7 @@ public class ArticleAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         }
         if (holder instanceof ItemArticleViewHolder) {
             ItemArticleViewHolder newHolder = (ItemArticleViewHolder) holder;
-            final Article article = mArticleList.get(position);
+            final Article article = mArticleList.get(pos);
             newHolder.mTitleTv.setText(Html.fromHtml(article.getTitle()));
             SQLiteDatabase db = dbhelper.getReadableDatabase();
             //查询Article表对象，创建游标对象
@@ -142,7 +160,7 @@ public class ArticleAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                 } while (cursor.moveToNext());
             }
             ContentValues values = new ContentValues();    //创建存放数据的ContentValues对象
-            values.put("id",mArticleList.get(position).getId()); //存储RecycleView即将显示出来的文章的id
+            values.put("id",mArticleList.get(pos).getId()); //存储RecycleView即将显示出来的文章的id
             db.insert("Article",null,values); //数据库执行插入命令
             cursor.close();
             db.close();
@@ -154,7 +172,7 @@ public class ArticleAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             newHolder.mSuperChapterNameTv.setText(article.getSuperChapterName());
             newHolder.mAuthorTv.setText("作者:" + article.getAuthor());
             //设置Tag方便进行点击事件数据的处理
-            newHolder.mItemArcticleCV.setTag(position);
+            newHolder.mItemArcticleCV.setTag(pos);
 
             //若文章已被点击，则被设为灰色已读
             holder.itemView.setOnClickListener(new View.OnClickListener() {
@@ -195,31 +213,46 @@ public class ArticleAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         if (articleList_new != null) {
             int previousSize = articleList.size();
             articleList.clear();
-            notifyItemRangeRemoved(0, previousSize);
+            notifyItemRangeRemoved(1, previousSize);
             articleList.addAll(articleList_new);
-            notifyItemRangeInserted(0, articleList_new.size());
-        }
-    }
-
-    /**
-     * 上滑到最后的item时返回0，否则返回1
-     * @param position
-     * @return itemtype
-     */
-    @Override
-    public int getItemViewType(int position) {
-       if (position == getItemCount()-1 ){
-            return ITEM_TYPE_FOOTER;
-        }else {
-            return 1;
+            notifyItemRangeInserted(1, articleList_new.size());
         }
     }
 
     @Override
     public int getItemCount() {
-        return mArticleList.size() ;
+        return mHeaderView == null ? mArticleList.size() : mArticleList.size() + 1 ;
     }
 
+    /**
+     * 根据不同位置判断view的种类，返回不同的值
+     * @param position
+     * @return
+     */
+    @Override
+    public int getItemViewType(int position) {
+        if(position == 0) return ITEM_TYPE_HEADER;
+        if (position == getItemCount()-1 ) {
+            return ITEM_TYPE_FOOTER;
+        }
+        if(mHeaderView == null) return ITEM_TYPE_NORMAL;
+        return ITEM_TYPE_NORMAL;
+    }
+
+    public void setHeaderView(View headerView) {
+        mHeaderView = headerView;
+        notifyItemInserted(0);
+    }
+
+    /**
+     * 添加了一个headerView，其他的Item的position都往后移了以为，所以要进行动态计算
+     * @param holder
+     * @return
+     */
+    private int getRealPosition(RecyclerView.ViewHolder holder) {
+        int position = holder.getLayoutPosition();
+        return mHeaderView == null ? position : position - 1;
+    }
 
     /*设置点击事件监视*/
     public void setRecyclerViewOnItemClickListener(ArticleRecyclerViewOnItemClickListener onArticleItemClickListener) {

@@ -35,24 +35,13 @@ public class WebContentActivity extends AppCompatActivity {
         mContentWV = (WebView) findViewById(R.id.wv_content);
         mContentWV.getSettings().setJavaScriptEnabled(true);
         mContentWV.setWebViewClient(new WebViewClient());
-//        mContentWV.setWebChromeClient(new WebChromeClient(){
-//            @Override
-//            //重写WebChromeClient监听网页加载的进度,从而实现进度条
-//            public void onProgressChanged(WebView view, int newProgress) {
-//                super.onProgressChanged(view, newProgress);
-//                if(newProgress==100){
-//                    mLoadingPb.setVisibility(View.GONE);//加载完网页进度条消失
-//                } else{
-//                    mLoadingPb.setProgress(newProgress);//设置进度值
-//                    mLoadingPb.setVisibility(View.VISIBLE);//开始加载网页时显示进度条
-//                }
-//            }
-//        });
         mContentWV.setWebChromeClient(new WebChromeClient() {
             @Override
+            //重写WebChromeClient监听网页加载的进度,从而实现进度条
             public void onProgressChanged(WebView view, int newProgress) {
                 //显示进度条
                 mLoadingPb.setProgress(newProgress);
+                mLoadingPb.setVisibility(View.VISIBLE);
                 if (newProgress == 100) {
                     //加载完毕隐藏进度条
                     mLoadingPb.setVisibility(View.GONE);

@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.design.widget.CoordinatorLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:id="@+id/item_banner"
+    >
+
+    <!--<android.support.v7.widget.AppCompatImageView-->
+        <!--android:id="@+id/banner_image"-->
+        <!--android:layout_width="match_parent"-->
+        <!--android:layout_height="match_parent"-->
+        <!--android:scaleType="fitXY"/>-->
+
+    <com.example.odm.wanandroid.base.WrapperImageView
+        android:scaleType="fitXY"
+        android:id="@+id/banner_image"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        />
+
+    <TextView
+        android:id="@+id/banner_title"
+        android:text="我是标题名字"
+        android:textSize="15sp"
+        android:textColor="@color/black"
+        android:layout_width="match_parent"
+        android:gravity="center_vertical"
+        android:paddingLeft="10dp"
+        android:layout_gravity="bottom"
+        android:background="@color/shallow_white"
+        android:layout_height="32dp" />
+
+
+</android.support.design.widget.CoordinatorLayout>

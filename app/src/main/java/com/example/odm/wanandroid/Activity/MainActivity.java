@@ -18,6 +18,7 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.view.KeyEvent;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
@@ -26,11 +27,14 @@ import android.widget.Toast;
 
 import com.example.odm.wanandroid.R;
 import com.example.odm.wanandroid.adapter.ArticleAdapter;
+import com.example.odm.wanandroid.adapter.BannerViewAdapter;
 import com.example.odm.wanandroid.application.MyApplication;
+import com.example.odm.wanandroid.banner.BannerView;
 import com.example.odm.wanandroid.base.BaseUrl;
 import com.example.odm.wanandroid.base.HandlerManger;
 import com.example.odm.wanandroid.base.RecyclerViewNoBugLinearLayoutManager;
 import com.example.odm.wanandroid.bean.Article;
+import com.example.odm.wanandroid.bean.Banner;
 import com.example.odm.wanandroid.bean.PageListData;
 import com.example.odm.wanandroid.bean.User;
 import com.example.odm.wanandroid.db.ArticlebaseHelper;
@@ -55,9 +59,14 @@ public class MainActivity extends AppCompatActivity {
     private RecyclerView mRecyclerView;
     private PageListData pageListData;
     private String articleJsondata  = "";
-    private String resultdata = "";
+    private String resultArticledata = ""; // 返回的文章json数据
+    private String resultBannerdata = "";// 返回的banner的Json数据
     private ArticlebaseHelper dbHelper;
     private SwipeRefreshLayout mSwipeRefreshLayout;
+
+    private BannerView mBannerView;
+    private BannerViewAdapter mBannerAdapter;
+    private List<Banner> bannerList = new ArrayList<>();
     private BroadcastReceiver receiver = new InterRecevier(); //广播接收器
     private long exitTime=0; //记录第一次返回键退出的初始时间
     private boolean mIsRefreshing=false;
@@ -66,7 +75,7 @@ public class MainActivity extends AppCompatActivity {
     private boolean isRefresh = false;
     private boolean isloading = false;
     private static boolean  isHasMore_AtricleList = true;
-    private final  int ARTICLECOUNT_ONEPAGE = 20; //从网页请求的数据，以页为单位，一页的文章的数量为20
+    final  int ARTICLECOUNT_ONEPAGE = 20; //从网页请求的数据，以页为单位，一页的文章的数量为20
     //处理返回结果的函数，系统提供的类方法
    Handler handler = new Handler(){//此函数是属于MainActivity.java所在线程的函数方法，所以可以直接调用MainActivity的 所有方法。
         public void handleMessage(Message msg) {
@@ -80,6 +89,7 @@ public class MainActivity extends AppCompatActivity {
                             load_times = 0;
                             mSwipeRefreshLayout.setRefreshing(true);
                             new ArticleListTask().execute(BaseUrl.getArticleListPath());
+                            new BannerAsyncTask().execute(BaseUrl.getBannerPath());
                         }
                     });
                 }
@@ -121,6 +131,8 @@ public class MainActivity extends AppCompatActivity {
      */
     protected void initArticleAdapter(){
         articleAdapter = new ArticleAdapter(articleList);
+        //加入头布局
+        articleAdapter.setHeaderView(mBannerView);
         //设置ArticleAdapter的每个子项的点击事件--在数据库增加已读文章的标题，跳转到对应网页
         articleAdapter.setRecyclerViewOnItemClickListener(new ArticleAdapter.ArticleRecyclerViewOnItemClickListener() {
             @Override
@@ -179,6 +191,8 @@ public class MainActivity extends AppCompatActivity {
                     isloading = true;
                     isRefresh = false;
                     new ArticleListTask().execute(BaseUrl.getArticleListPath());
+                    mBannerView.cancelScroll();//关闭Banner的自动滚动
+                    mBannerView.startScroll();//重新启动Banner的自动滚动
                 }
             }
         });
@@ -207,8 +221,23 @@ public class MainActivity extends AppCompatActivity {
                 isloading = false;
                 isRefresh = true;
                 new ArticleListTask().execute(BaseUrl.getArticleListPath());
+                mBannerView.cancelScroll();//关闭Banner的自动滚动
+                mBannerView.startScroll();//重新启动Banner的自动滚动
             }
         });
+
+//        View header = LayoutInflater.from(this).inflate(R.layout.item_banner,null);
+//        mBannerView = (BannerView) header.findViewById(R.id.item_banner);
+//        //设置banner的高度为手机屏幕的四分之一
+//        DisplayMetrics dm = getResources().getDisplayMetrics();
+//        int heigth = dm.heightPixels;
+//        int width = dm.widthPixels;
+//        mBannerView.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,heigth/4));
+//        articleAdapter.setHeaderView(mBannerView);
+//        mBannerView.cancelScroll();
+//        mBannerAdapter.notifyDataSetChanged();
+        mBannerView = (BannerView) LayoutInflater.from(this)
+                .inflate(R.layout.view_banner,null);
         }
 
     /**
@@ -237,7 +266,7 @@ public class MainActivity extends AppCompatActivity {
 
 
     /**
-     * AsyncTask--发送请求，处理JSON数据，显示文章
+     * ArticleListTask--发送请求，处理JSON数据，显示文章
      */
     public class ArticleListTask extends AsyncTask<String,Integer,String> {
 
@@ -259,15 +288,16 @@ public class MainActivity extends AppCompatActivity {
         @Override
         protected String doInBackground(String... params) {
             //mArticleList.clear();
+            //resultBannerdata = GetUtil.sendGet(BaseUrl.getBannerPath(),resultBannerdata);
             for (int i = 0; i < 1; i++) {
                 //初始化文章列表里面的数据
                 //publishProgress(i);
                if(isloading ) {
                    i = load_times + i;//加载更多时，令i保持在最新要出来的一页
                }
-                resultdata =  GetUtil.sendGet(params[0] + i + "/json", articleJsondata);
+                resultArticledata =  GetUtil.sendGet(params[0] + i + "/json", articleJsondata);
             }
-            return resultdata;
+            return resultArticledata;
          }
 
         /**
@@ -276,6 +306,12 @@ public class MainActivity extends AppCompatActivity {
          */
         @Override
         protected void onPostExecute(String resultdata) {
+            //处理banner数据，填充bannerList
+//            JsonUtil.handleBannerta(bannerList,resultBannerdata);
+//            mBannerAdapter = new BannerViewAdapter(bannerList,bitmapList);
+//            mBannerView.setAdapter(mBannerAdapter);
+//            mBannerAdapter.notifyDataSetChanged();
+            //Article
             String resultJsondata = resultdata;
             super.onPostExecute(resultJsondata);
             mRecyclerView.setAdapter(articleAdapter);
@@ -289,8 +325,8 @@ public class MainActivity extends AppCompatActivity {
             //刷新状态下，如果文章数组小于固定数量20说明已经出现过的文章被过滤掉，List里面这部分都是新的文章，需要从列表末尾调回顶部
             if(mArticleList.size() < ARTICLECOUNT_ONEPAGE && mArticleList.size() > 0  && isRefresh) {
                 for(int i = mArticleList.size() ; i >= 1; i-- )
-                articleAdapter.notifyItemMoved(articleAdapter.getItemCount(),0);
-                articleAdapter.notifyItemRangeChanged(0,articleAdapter.getItemCount()); //刷新位置，防止数据的位置紊乱
+                articleAdapter.notifyItemMoved(articleAdapter.getItemCount(),1);
+                articleAdapter.notifyItemRangeChanged(1,articleAdapter.getItemCount()); //刷新位置，防止数据的位置紊乱
             }
             //加载状态下，文章数组数量小于固定数量20，说明文章已经显示完了
             if(mArticleList.size() < ARTICLECOUNT_ONEPAGE && mArticleList.size() > 0  && isloading){
@@ -313,13 +349,37 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * BannerAsyncTask--发送Banner数据网络请求，处理Banner数据
+     */
+    public class BannerAsyncTask extends AsyncTask<String,Integer,String> {
+
+
+        @Override
+        protected String doInBackground(String... params) {
+            resultBannerdata = GetUtil.sendGet(BaseUrl.getBannerPath(),resultBannerdata);
+            return resultBannerdata;
+        }
+
+
+        @Override
+        protected void onPostExecute(String data) {
+            super.onPostExecute(data);
+            JsonUtil.handleBannerta(bannerList,data);
+            mBannerAdapter = new BannerViewAdapter(bannerList);
+            mBannerView.setAdapter(mBannerAdapter);
+            mBannerAdapter.notifyDataSetChanged();
+        }
+
+    }
+
 
 
 
     /**
      * 给标题栏加载menu菜单布局
-     * @param menu
-     * @return
+     * @param menu 菜单布局
+     * @return 状态
      */
     public boolean onCreateOptionsMenu(Menu menu){
         getMenuInflater().inflate(R.menu.toolbar_main,menu);
@@ -329,8 +389,8 @@ public class MainActivity extends AppCompatActivity {
 
     /**
      * 处理标题栏各个按钮的点击事件
-     * @param item
-     * @return
+     * @param item 按钮子项
+     * @return 状态
      */
     @Override
     public  boolean onOptionsItemSelected(MenuItem item) {

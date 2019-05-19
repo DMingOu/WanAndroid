@@ -33,7 +33,7 @@
         android:layout_width="match_parent"
         android:layout_height="4dip"
         android:progressDrawable="@drawable/shape_progressbar_web"
-        android:visibility="visible"
+        android:visibility="gone"
         android:indeterminateOnly="false"
         android:max="100"
         android:layout_below="@+id/cdl_toolbar_web"
