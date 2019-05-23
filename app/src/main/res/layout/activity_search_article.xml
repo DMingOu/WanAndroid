@@ -37,7 +37,7 @@
             android:singleLine="true"
             android:gravity="center"
             android:textStyle="bold"
-            android:hint="文章关键词,多个关键词请用空格隔开"/>
+            android:hint="搜索关键词以空格形式隔开"/>
     </LinearLayout>
 
 

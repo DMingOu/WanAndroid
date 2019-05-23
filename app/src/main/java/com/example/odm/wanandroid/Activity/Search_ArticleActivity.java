@@ -161,6 +161,7 @@ public class Search_ArticleActivity extends AppCompatActivity {
      */
     protected void initArticleAdapter(){
         articleAdapter = new ArticleAdapter(articleList);
+        articleAdapter.setSearching(true);
         //设置ArticleAdapter的每个子项的点击事件--往数据增加已读文章的标题，跳转到对应网页
         articleAdapter.setRecyclerViewOnItemClickListener(new ArticleAdapter.ArticleRecyclerViewOnItemClickListener() {
             @Override

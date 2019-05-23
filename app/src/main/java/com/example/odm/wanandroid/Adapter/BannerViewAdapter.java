@@ -17,7 +17,7 @@ import java.util.List;
 
 /**
  * Created by ODM on 2019/5/18.
- * BannerViewAdapter
+ * BannerViewAdapter--Banner的适配器
  */
 
 
@@ -50,7 +50,6 @@ public class BannerViewAdapter extends BannerViewBaseAdapter {
         wrapperImageView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                System.out.println("图片被点击");
                 Intent intent = new Intent();
                 intent.setClass(MyApplication.getContext(), WebContentActivity.class);
                 intent.putExtra("url",bannerbean.getUrl());

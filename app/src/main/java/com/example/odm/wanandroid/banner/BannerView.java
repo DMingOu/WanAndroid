@@ -67,7 +67,7 @@ public class BannerView extends FrameLayout implements ViewPager.OnPageChangeLis
                         public void run() {
                             mViewPager.setCurrentItem(mViewPager.getCurrentItem()+1);
                         }
-                    },1000);
+                    },2000);
                     break;
                 default:
                     break;
@@ -144,7 +144,7 @@ public class BannerView extends FrameLayout implements ViewPager.OnPageChangeLis
                 }
                 handler.sendEmptyMessage(0);
             }
-        },1000,4000, TimeUnit.MILLISECONDS);
+        },1000,3000, TimeUnit.MILLISECONDS);
     }
 
     /**

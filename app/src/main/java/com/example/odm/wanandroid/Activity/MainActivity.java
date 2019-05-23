@@ -215,6 +215,7 @@ public class MainActivity extends AppCompatActivity {
                 //下滑刷新，新开一个Task对象--重新请求网络数据
                 isloading = false;
                 isRefresh = true;
+                mBannerView.cancelScroll();
                 new ArticleListTask().execute(BaseUrl.getArticleListPath());
 
             }
@@ -318,7 +319,6 @@ public class MainActivity extends AppCompatActivity {
             if(! isloading && isRefresh ) {
                 //下滑刷新后定位回第一篇文章
                 mRecyclerView.scrollToPosition(0);
-                mBannerView.cancelScroll();//关闭Banner的自动滚动
                 mBannerView.startScroll();//重新启动Banner的自动滚动
                 isRefresh = false;
                 isloading = false;
@@ -389,7 +389,6 @@ public class MainActivity extends AppCompatActivity {
                 intent_search.setClass(MainActivity.this,Search_ArticleActivity.class);
                 startActivity(intent_search);
                 break;
-
         }
         return true;
     }
