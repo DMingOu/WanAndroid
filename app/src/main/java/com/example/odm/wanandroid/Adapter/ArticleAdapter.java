@@ -34,6 +34,16 @@ public class ArticleAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
     private Context mContext;
     private View mHeaderView;
 
+    public boolean isSearching() {
+        return isSearching;
+    }
+
+    public void setSearching(boolean searching) {
+        isSearching = searching;
+    }
+
+    private boolean isSearching = false;
+
     private ArticleRecyclerViewOnItemClickListener onArticleItemClickListener;//轻点击
 //    private ArticleRecyclerViewOnItemLongClickListener onArticleItemLongClickListener;//长按
 
@@ -107,7 +117,7 @@ public class ArticleAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             mContext = parent.getContext();
         }
         //头布局的加载
-        if (mHeaderView != null && viewType == ITEM_TYPE_HEADER){
+        if (mHeaderView != null && viewType == ITEM_TYPE_HEADER && ! isSearching()){
             return new HeaderViewHolder(mHeaderView);
         }
         //如果达到最后一个item就加载 "加载更多" or "没有更多"
@@ -128,9 +138,14 @@ public class ArticleAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
     @Override
     public void onBindViewHolder(final RecyclerView.ViewHolder holder, int position){
+         final int pos;//子项位置
         //位置是第一个
-        if(getItemViewType(position) == ITEM_TYPE_HEADER) return;
-        final int pos = getRealPosition(holder);
+        if(isSearching()) {
+            if (getItemViewType(position) == ITEM_TYPE_HEADER) return;
+              pos = getRealPosition(holder);
+        } else {
+              pos = position;
+        }
         //传进来的是底部加载的holder
         if(holder instanceof  FooterViewHolder){
             ((FooterViewHolder) holder).mLoadTv.setText("正在加载中");
@@ -231,7 +246,7 @@ public class ArticleAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
      */
     @Override
     public int getItemViewType(int position) {
-        if(position == 0) return ITEM_TYPE_HEADER;
+        if(position == 0 && ! isSearching()) return ITEM_TYPE_HEADER;//第一个子项且在非搜索界面才可以展示banner
         if (position == getItemCount()-1 ) {
             return ITEM_TYPE_FOOTER;
         }

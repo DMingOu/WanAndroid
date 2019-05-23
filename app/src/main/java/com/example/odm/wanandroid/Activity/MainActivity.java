@@ -328,7 +328,7 @@ public class MainActivity extends AppCompatActivity {
                 mBannerView.startScroll();//重新启动Banner的自动滚动
                 isRefresh = false;
                 isloading = false;
-                //上拉加载后，定位到加载出来的位置附近。每一页都有20篇文章
+                //上拉加载后，定位到加载出来的位置附近。每一页都有20篇文章，首页文章列表恒>20，不同于搜索界面
                 mRecyclerView.scrollToPosition(articleAdapter.getItemCount() - ARTICLECOUNT_ONEPAGE);
             }
         }

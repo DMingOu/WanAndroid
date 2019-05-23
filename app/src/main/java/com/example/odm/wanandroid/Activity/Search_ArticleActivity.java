@@ -259,7 +259,15 @@ public class Search_ArticleActivity extends AppCompatActivity {
                     isRefresh = false;
                     isloading = false;
                     //上拉加载后，定位到加载出来的位置附近。每一页都有20篇文章
-                    mRecyclerView.scrollToPosition(articleAdapter.getItemCount() - ARTICLECOUNT_ONEPAGE);
+                    if(articleAdapter.getItemCount() >= 20) {
+                        mRecyclerView.scrollToPosition(articleAdapter.getItemCount() - ARTICLECOUNT_ONEPAGE);
+                    } else {
+                        //若首页未满，则返回到顶部
+                        mRecyclerView.scrollToPosition(0);
+                    }
+//                    if(load_times == 0 && ! isHasMore){
+//                        mRecyclerView.scrollToPosition(0);
+//                    }
                 }
             }
         }
