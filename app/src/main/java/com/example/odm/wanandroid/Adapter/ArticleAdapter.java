@@ -33,16 +33,10 @@ public class ArticleAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
     private List<Article> mArticleList;
     private Context mContext;
     private View mHeaderView;
+    private boolean searching = false; //搜索界面不显示头布局，区分变量
 
-    public boolean isSearching() {
-        return isSearching;
-    }
 
-    public void setSearching(boolean searching) {
-        isSearching = searching;
-    }
 
-    private boolean isSearching = false;
 
     private ArticleRecyclerViewOnItemClickListener onArticleItemClickListener;//轻点击
 //    private ArticleRecyclerViewOnItemLongClickListener onArticleItemLongClickListener;//长按
@@ -258,6 +252,15 @@ public class ArticleAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         mHeaderView = headerView;
         notifyItemInserted(0);
     }
+
+    public boolean isSearching() {
+        return searching;
+    }
+
+    public void setSearching(boolean searching) {
+        this.searching = searching;
+    }
+
 
     /**
      * 添加了一个headerView，其他的Item的position都往后移了以为，所以要进行动态计算

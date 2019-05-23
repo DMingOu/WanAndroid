@@ -69,8 +69,8 @@ public class MainActivity extends AppCompatActivity {
     private long exitTime=0; //记录第一次返回键退出的初始时间
     private boolean mIsRefreshing=false;
     private static boolean isLogin = false;
-    private boolean isRefresh = false;
-    private boolean isloading = false;
+    private boolean refreshing = false;
+    private boolean loading = false;
     private static boolean  isHasMore_AtricleList = true;
     final  int ARTICLECOUNT_ONEPAGE = 20; //从网页请求的数据，以页为单位，一页的文章的数量为20
     //处理返回结果的函数，系统提供的类方法
@@ -84,7 +84,7 @@ public class MainActivity extends AppCompatActivity {
                         @Override
                         public void run() {
                             mSwipeRefreshLayout.setRefreshing(true);
-                            isloading = true;
+                            loading = true;
                             new BannerAsyncTask().execute(BaseUrl.getBannerPath());
                             new ArticleListTask().execute(BaseUrl.getArticleListPath());
                         }
@@ -105,7 +105,7 @@ public class MainActivity extends AppCompatActivity {
         initBoardcaster();//初始化广播
         initViews();//初始化界面控件
         initArticleAdapter();
-        isloading = true;
+        loading = true;
         checkStatus(); //检查登录状态
         closeAndroidPDialog();//关闭警告弹窗
     }
@@ -184,9 +184,9 @@ public class MainActivity extends AppCompatActivity {
                 super.onScrolled(recyclerView, dx, dy);
                 int endCompletelyPosition = linearLayoutManager.findLastVisibleItemPosition();
                 int totalItemCount = linearLayoutManager.getItemCount();
-                if(!isloading && totalItemCount < (endCompletelyPosition + 2 ) ) {
-                    isloading = true;
-                    isRefresh = false;
+                if(!loading && totalItemCount < (endCompletelyPosition + 2 ) ) {
+                    loading = true;
+                    refreshing = false;
                     new ArticleListTask().execute(BaseUrl.getArticleListPath());
 
                 }
@@ -213,8 +213,8 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onRefresh() {
                 //下滑刷新，新开一个Task对象--重新请求网络数据
-                isloading = false;
-                isRefresh = true;
+                loading = false;
+                refreshing = true;
                 mBannerView.cancelScroll();
                 new ArticleListTask().execute(BaseUrl.getArticleListPath());
 
@@ -274,7 +274,7 @@ public class MainActivity extends AppCompatActivity {
         protected String doInBackground(String... params) {
             for (int i = 0; i < 1; i++) {
                 //初始化文章列表里面的数据
-               if(isloading && ! isRefresh ) {
+               if(loading && ! refreshing ) {
                    //加载更多时，令i保持在最新要出来的一页
                    int index = pageListDataList.size();
                    i = index + i;
@@ -297,37 +297,37 @@ public class MainActivity extends AppCompatActivity {
             System.out.println(resultJsondata);
             mRecyclerView.setAdapter(articleAdapter);
             pageListData = new PageListData();
-            JsonUtil.handleArtcileData(mArticleList, pageListData, resultJsondata,isRefresh);
+            JsonUtil.handleArtcileData(mArticleList, pageListData, resultJsondata,refreshing);
             articleAdapter.notifyData(mArticleList);
-            if(isloading && ! isRefresh) {
+            if(loading && ! refreshing) {
                 pageListDataList.add(pageListData);//页码里面有几个对象，就代表文章列表有几页
             }
             resultJsondata = "";
             //articleList，在外面的一些方法会调用到它
             articleList.addAll(mArticleList);
             //刷新状态下，如果文章数组小于固定数量20说明已经出现过的文章被过滤掉，List里面这部分都是新的文章，需要从列表末尾调回顶部
-            if(mArticleList.size() < ARTICLECOUNT_ONEPAGE && mArticleList.size() > 0  && isRefresh) {
+            if(mArticleList.size() < ARTICLECOUNT_ONEPAGE && mArticleList.size() > 0  && refreshing) {
                 for(int i = mArticleList.size() ; i >= 1; i-- )
                 articleAdapter.notifyItemMoved(articleAdapter.getItemCount(),1);
                 articleAdapter.notifyItemRangeChanged(1,articleAdapter.getItemCount()); //刷新位置，防止数据的位置紊乱
             }
             //加载状态下，文章数组数量小于固定数量20，说明文章已经显示完了
-            if(mArticleList.size() < ARTICLECOUNT_ONEPAGE && mArticleList.size() > 0  && isloading){
+            if(mArticleList.size() < ARTICLECOUNT_ONEPAGE && mArticleList.size() > 0  && loading){
                     MainActivity.setIsHasMore_AtricleList(false);
             }
             mSwipeRefreshLayout.setRefreshing(false);//停止刷新动画
-            if(! isloading && isRefresh ) {
+            if(! loading && refreshing ) {
                 //下滑刷新后定位回第一篇文章
                 mRecyclerView.scrollToPosition(0);
                 mBannerView.startScroll();//重新启动Banner的自动滚动
-                isRefresh = false;
-                isloading = false;
+                refreshing = false;
+                loading = false;
             }else{
                 //上拉加载后
                 mBannerView.cancelScroll();//关闭Banner的自动滚动
                 mBannerView.startScroll();//重新启动Banner的自动滚动
-                isRefresh = false;
-                isloading = false;
+                refreshing = false;
+                loading = false;
                 //上拉加载后，定位到加载出来的位置附近。每一页都有20篇文章，首页文章列表恒>20，不同于搜索界面
                 mRecyclerView.scrollToPosition(articleAdapter.getItemCount() - ARTICLECOUNT_ONEPAGE);
             }

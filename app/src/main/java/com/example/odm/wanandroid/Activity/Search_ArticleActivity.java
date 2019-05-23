@@ -56,12 +56,12 @@ public class Search_ArticleActivity extends AppCompatActivity {
     private String keyword;//搜索关键词
     private PostUtil postUtil;//Post工具类
     private BroadcastReceiver receiver = new InterRecevier();
-    private boolean isRefresh = false;
+    private boolean refreshing = false;
     private boolean mIsRefreshing=false;
-    private boolean isloading  = false;
+    private boolean loading  = false;
     private  static boolean isHasMore = false;//是否还有下一页能加载
     private int load_times = 0; //加载的次数，被用于发送文章请求，控制页码
-    private final  int ARTICLECOUNT_ONEPAGE = 20;
+    final  int ARTICLECOUNT_ONEPAGE = 20;
 
     Handler handler = new Handler(){//此函数是属于MainActivity.java所在线程的函数方法，所以可以直接调用MainActivity的 所有方法。
         public void handleMessage(Message msg) {
@@ -117,10 +117,10 @@ public class Search_ArticleActivity extends AppCompatActivity {
                 super.onScrolled(recyclerView, dx, dy);
                 int endCompletelyPosition = linearLayoutManager.findLastVisibleItemPosition();
                 int totalItemCount = linearLayoutManager.getItemCount();
-                if(!isloading && totalItemCount < (endCompletelyPosition + 2 ) ) {
+                if(!loading && totalItemCount < (endCompletelyPosition + 2 ) ) {
                     if(isHasMore) {
-                        isloading = true;
-                        isRefresh = false;
+                        loading = true;
+                        refreshing = false;
                         new Search_ArticleActivity.ArticleList_SearchTask().execute(BaseUrl.getSearchPath());
                  }
                 }
@@ -145,8 +145,8 @@ public class Search_ArticleActivity extends AppCompatActivity {
                     keyword  = mSearchEt.getText().toString();
                     load_times = 0; //每次点击搜索键重置加载次数为0，展示第一页搜索的数据
                     articleList.clear();
-                    isloading = true;
-                    isRefresh = false;
+                    loading = true;
+                    refreshing = false;
                     // 搜索的操作--网络请求数据
                     new ArticleList_SearchTask().execute(BaseUrl.getSearchPath());
                     return true;
@@ -213,7 +213,7 @@ public class Search_ArticleActivity extends AppCompatActivity {
             try {
                 for (int i = 0; i < 1; i++) {
                     //初始化文章列表里面的数据
-                    if (isloading && isHasMore) {
+                    if (loading && isHasMore) {
                         i = load_times + i;//加载更多时，令i保持在最新要出来的一页
                     }
                     String keywordString = "k=" + URLEncoder.encode(keyword, "UTF-8");
@@ -235,7 +235,7 @@ public class Search_ArticleActivity extends AppCompatActivity {
             super.onPostExecute(resultdata);
             mRecyclerView.setAdapter(articleAdapter);
             pageListData = new PageListData();
-            JsonUtil.handleArtcileData(mArticleList, pageListData, resultdata,isRefresh);
+            JsonUtil.handleArtcileData(mArticleList, pageListData, resultdata,refreshing);
             pageListDataList.add(pageListData);//页码里面有几个对象，就代表文章列表有几页
             articleList.addAll(mArticleList);
             articleAdapter.notifyDataSetChanged();//刷新Adapter数据
@@ -250,17 +250,17 @@ public class Search_ArticleActivity extends AppCompatActivity {
                 } else {
                     isHasMore = true; //加载这一页有20篇文章，说明可能还会有下一页
                 }
-                if(! isloading && isRefresh ) {
-                    isRefresh = false;
-                    isloading = false;
+                if(! loading && refreshing ) {
+                    refreshing = false;
+                    loading = false;
                 }else{
                     //上拉加载后
                     load_times++;//加载次数+1
-                    isRefresh = false;
-                    isloading = false;
+                    refreshing = false;
+                    loading = false;
                     //上拉加载后，定位到加载出来的位置附近。每一页都有20篇文章
                     if(articleAdapter.getItemCount() >= 20) {
-                        mRecyclerView.scrollToPosition(articleAdapter.getItemCount() - ARTICLECOUNT_ONEPAGE);
+                        mRecyclerView.scrollToPosition(articleAdapter.getItemCount() - ARTICLECOUNT_ONEPAGE );
                     } else {
                         //若首页未满，则返回到顶部
                         mRecyclerView.scrollToPosition(0);
