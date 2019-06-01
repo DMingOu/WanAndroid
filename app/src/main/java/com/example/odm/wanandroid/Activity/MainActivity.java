@@ -52,6 +52,9 @@ import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
+    private static boolean logined = false;
+    private static boolean isHasMore_AtricleList = true;
+    final int ARTICLECOUNT_ONEPAGE = 20; //从网页请求的数据，以页为单位，一页的文章的数量为20
     private User user;
     private List<Article> articleList = new ArrayList<>();
     private List<PageListData> pageListDataList = new ArrayList<>();
@@ -66,18 +69,15 @@ public class MainActivity extends AppCompatActivity {
     private BannerViewAdapter mBannerAdapter;
     private List<Banner> bannerList = new ArrayList<>();
     private BroadcastReceiver receiver = new InterRecevier(); //广播接收器
-    private long exitTime=0; //记录第一次返回键退出的初始时间
-    private boolean mIsRefreshing=false;
-    private static boolean isLogin = false;
+    private long exitTime = 0; //记录第一次返回键退出的初始时间
+    private boolean mIsRefreshing = false;
     private boolean refreshing = false;
     private boolean loading = false;
-    private static boolean  isHasMore_AtricleList = true;
-    final  int ARTICLECOUNT_ONEPAGE = 20; //从网页请求的数据，以页为单位，一页的文章的数量为20
     //处理返回结果的函数，系统提供的类方法
-   Handler handler = new Handler(){//此函数是属于MainActivity.java所在线程的函数方法，所以可以直接调用MainActivity的 所有方法。
+    Handler handler = new Handler() {//此函数是属于MainActivity.java所在线程的函数方法，所以可以直接调用MainActivity的 所有方法。
         public void handleMessage(Message msg) {
             if (msg.what == 0x01) {
-                if(articleList.size() == 0) {
+                if (articleList.size() == 0) {
                     //第一篇文章都还没加载出来,需要请求数据加载文章
                     //若首次启动就加载刷新动画，使用SwipeRefreshLayout的post方法
                     mSwipeRefreshLayout.post(new Runnable() {
@@ -96,13 +96,21 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
+    public static boolean isHasMore_AtricleList() {
+        return isHasMore_AtricleList;
+    }
+
+    public static void setIsHasMore_AtricleList(boolean isHasMore_AtricleList) {
+        MainActivity.isHasMore_AtricleList = isHasMore_AtricleList;
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main_ariticle);
-        dbHelper = new ArticlebaseHelper(this,"Article.db",null,1);
+        dbHelper = new ArticlebaseHelper(this, "Article.db", null, 1);
         HandlerManger.getInstance().setHandler(handler);
-        initBoardcaster();//初始化广播
+
         initViews();//初始化界面控件
         initArticleAdapter();
         loading = true;
@@ -117,16 +125,95 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
-    protected void onDestroy() {
-        super.onDestroy();
+    protected void onResume() {
+        super.onResume();
+        initBoardcaster();//初始化广播
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
         unregisterReceiver(receiver);//注销注册的广播
         handler.removeCallbacksAndMessages(null);//断掉与Handler 的联系，销毁Handler 消息的处理,防止handler导致内存泄漏
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+
+    }
+
+    protected void initBoardcaster() {
+        IntentFilter filter = new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION); //动态注册广播
+        this.registerReceiver(receiver, filter);//注册广播
+    }
+
+    protected void initViews() {
+        Toolbar toolbar_main = (Toolbar) findViewById(R.id.tool_bar_main);
+        setSupportActionBar(toolbar_main);
+        ActionBar actionBar = getSupportActionBar();
+        if (actionBar != null) {
+            //使左上角图标是否显示，如果设成false，则没有程序图标，仅仅就个标题，否则，显示应用程序图标，对应id为android.R.id.home，对应ActionBar.DISPLAY_SHOW_HOME
+            actionBar.setDisplayHomeAsUpEnabled(true);
+            actionBar.setHomeAsUpIndicator(R.mipmap.ic_user_toolbar_32);
+        }
+        mRecyclerView = (RecyclerView) findViewById(R.id.rv_item_article);
+
+        //外部数据集和内部数据集不统一时会出现报错
+        final LinearLayoutManager linearLayoutManager = new RecyclerViewNoBugLinearLayoutManager(MainActivity.this, LinearLayoutManager.VERTICAL, false);
+        linearLayoutManager.setStackFromEnd(true);
+        mRecyclerView.setLayoutManager(linearLayoutManager);
+        //监听用户是否有上滑加载的操作
+        mRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
+                super.onScrolled(recyclerView, dx, dy);
+                int endCompletelyPosition = linearLayoutManager.findLastVisibleItemPosition();
+                int totalItemCount = linearLayoutManager.getItemCount();
+                if (!loading && totalItemCount < (endCompletelyPosition + 2)) {
+                    loading = true;
+                    refreshing = false;
+                    new ArticleListTask().execute(BaseUrl.getArticleListPath());
+                }
+            }
+        });
+        //mRecyclerView.setItemViewCacheSize(500);//设置RecyclerView的缓存数量, 大了就不复用ViewHolder，直接全部新建，布局建多了卡是迟早的事
+        //当刷新时设置,refreshing=true;刷新完毕后还原为false//refreshing=false;下滑刷新时固定屏幕暂停触碰操作
+        mRecyclerView.setOnTouchListener(
+                new View.OnTouchListener() {
+                    @Override
+                    public boolean onTouch(View v, MotionEvent event) {
+                        if (refreshing) {
+                            return true;
+                        } else {
+                            return false;
+                        }
+                    }
+                }
+        );
+        //下滑刷新
+        mSwipeRefreshLayout = (SwipeRefreshLayout) findViewById(R.id.swipe_refresh_layout_main); //下拉刷新布局
+        mSwipeRefreshLayout.setColorSchemeColors(Color.parseColor("#009a61"), Color.parseColor("#FF0000"));// 进度条的颜色green ,red
+        mSwipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+            @Override
+            //下滑刷新，新开一个ArticleTask对象--重新请求网络数据
+            public void onRefresh() {
+                loading = false;
+                refreshing = true;
+                mBannerView.cancelScroll();//手动暂停Banner的轮播
+                new ArticleListTask().execute(BaseUrl.getArticleListPath());
+
+            }
+        });
+        //实例化banner
+        mBannerView = (BannerView) LayoutInflater.from(this)
+                .inflate(R.layout.view_banner, null);
     }
 
     /**
      * 初始化文章列表,但未装填数据
      */
-    protected void initArticleAdapter(){
+    protected void initArticleAdapter() {
         articleAdapter = new ArticleAdapter(articleList);
         //加入头布局
         articleAdapter.setHeaderView(mBannerView);
@@ -136,12 +223,12 @@ public class MainActivity extends AppCompatActivity {
             public void onArticleItemClick(View view, int position) {
                 SQLiteDatabase db = dbHelper.getWritableDatabase();
                 ContentValues values = new ContentValues();    //创建存放数据的ContentValues对象
-                values.put("title",articleList.get(position).getTitle());
-                db.insert("Article",null,values); //数据库执行插入命令
+                values.put("title", articleList.get(position).getTitle());
+                db.insert("Article", null, values); //数据库执行插入命令
                 db.close();
-                Intent intent = new Intent(MainActivity.this,WebContentActivity.class);
-                intent.putExtra("url",articleList.get(position).getLink());
-                intent.putExtra("title",articleList.get(position).getTitle());
+                Intent intent = new Intent(MainActivity.this, WebContentActivity.class);
+                intent.putExtra("url", articleList.get(position).getLink());
+                intent.putExtra("title", articleList.get(position).getTitle());
                 startActivity(intent);
             }
         });
@@ -162,86 +249,24 @@ public class MainActivity extends AppCompatActivity {
 //            }
 //        } );
     }
-    protected void initViews(){
-        Toolbar toolbar_main = (Toolbar) findViewById(R.id.tool_bar_main);
-        setSupportActionBar(toolbar_main);
-        ActionBar actionBar = getSupportActionBar();
-        if (actionBar != null){
-            //使左上角图标是否显示，如果设成false，则没有程序图标，仅仅就个标题，否则，显示应用程序图标，对应id为android.R.id.home，对应ActionBar.DISPLAY_SHOW_HOME
-            actionBar.setDisplayHomeAsUpEnabled(true);
-            actionBar.setHomeAsUpIndicator(R.mipmap.ic_user_toolbar_32);
-        }
-        mRecyclerView = (RecyclerView)findViewById(R.id.rv_item_article);
-
-        //外部数据集和内部数据集不统一时会出现报错
-        final LinearLayoutManager linearLayoutManager = new RecyclerViewNoBugLinearLayoutManager(MainActivity.this,LinearLayoutManager.VERTICAL,false);
-        linearLayoutManager.setStackFromEnd(true);
-        mRecyclerView.setLayoutManager(linearLayoutManager);
-        //监听用户是否有上滑加载的操作
-        mRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
-            @Override
-            public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
-                super.onScrolled(recyclerView, dx, dy);
-                int endCompletelyPosition = linearLayoutManager.findLastVisibleItemPosition();
-                int totalItemCount = linearLayoutManager.getItemCount();
-                if(!loading && totalItemCount < (endCompletelyPosition + 2 ) ) {
-                    loading = true;
-                    refreshing = false;
-                    new ArticleListTask().execute(BaseUrl.getArticleListPath());
-
-                }
-            }
-        });
-        //mRecyclerView.setItemViewCacheSize(500);//设置RecyclerView的缓存数量, 大了就不复用ViewHolder，直接全部新建，布局建多了卡是迟早的事
-        //当刷新时设置,mIsRefreshing=true;刷新完毕后还原为false//mIsRefreshing=false;
-        mRecyclerView.setOnTouchListener(
-                new View.OnTouchListener() {
-                    @Override
-                    public boolean onTouch(View v, MotionEvent event) {
-                        if (mIsRefreshing) {
-                            return true;
-                        } else {
-                            return false;
-                        }
-                    }
-                }
-        );
-        //下滑刷新
-        mSwipeRefreshLayout = (SwipeRefreshLayout) findViewById(R.id.swipe_refresh_layout_main); //下拉刷新布局
-        mSwipeRefreshLayout.setColorSchemeColors(Color.parseColor("#009a61"),Color.parseColor("#FF0000"));// 进度条的颜色green ,red
-        mSwipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
-            @Override
-            public void onRefresh() {
-                //下滑刷新，新开一个Task对象--重新请求网络数据
-                loading = false;
-                refreshing = true;
-                mBannerView.cancelScroll();
-                new ArticleListTask().execute(BaseUrl.getArticleListPath());
-
-            }
-        });
-        //实例化banner
-        mBannerView = (BannerView) LayoutInflater.from(this)
-                .inflate(R.layout.view_banner,null);
-        }
 
     /**
      * 进入软件后判断是否登录，依次检查登录状态和SharedPreferences存储的密码
      */
     public void checkStatus() {
         user = new User();
-        //isLogin变量判断APP目前是否已经登录
-        if(!isLogin) {
+        //logined变量判断APP目前是否已经登录
+        if (!logined) {
             //判断本地的SharePreferences是否为空
             final String data = SharedPreferencesUtil.getLoginSharedPreferences(MyApplication.getContext());
-            if(! data.equals("")) {
+            if (!data.equals("")) {
                 //利用本地的SharePreferences自动登录
                 new Thread() {
                     public void run() {
                         //发送POST登录请求并处理返回的JSON数据
                         new JsonUtil().handleUserdata(user, new PostUtil().sendPost(BaseUrl.getLoginPath(), data));
                         if (user.getErrorCode() == 0) {
-                            isLogin = true;//登录状态更新为成功登录
+                            logined = true;//登录状态更新为成功登录
                         }
                     }
                 }.start();
@@ -249,163 +274,10 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-
-    /**
-     * ArticleListTask--发送请求，处理JSON数据，显示文章
-     */
-    public class ArticleListTask extends AsyncTask<String,Integer,String> {
-
-        private  List<Article> mArticleList = new ArrayList<>();
-
-        /**
-         * 可以设置进度条对话框，缓解在一次性处理数据过多时屏幕白屏的尴尬
-         */
-        @Override
-        protected void onPreExecute() {
-            super.onPreExecute();
-        }
-
-
-        /**
-         * @param params  启动任务执行的输入参数 params[0]
-         * @return  后台计算结果,返回給onPostExecute方法
-         */
-        @Override
-        protected String doInBackground(String... params) {
-            for (int i = 0; i < 1; i++) {
-                //初始化文章列表里面的数据
-               if(loading && ! refreshing ) {
-                   //加载更多时，令i保持在最新要出来的一页
-                   int index = pageListDataList.size();
-                   i = index + i;
-               }
-                String articleJsondata  = "";
-                resultArticledata =  GetUtil.sendGet(params[0] + i + "/json", articleJsondata);
-            }
-            return resultArticledata;
-         }
-
-        /**
-         * 为RecycleView的Adapter装填数据
-         * @param resultdata  关于文章列表的JSON数据，doInbackground方法返回的结果
-         */
-        @Override
-        protected void onPostExecute(String resultdata) {
-            //Article
-            String resultJsondata = resultdata;
-            super.onPostExecute(resultJsondata);
-            System.out.println(resultJsondata);
-            mRecyclerView.setAdapter(articleAdapter);
-            pageListData = new PageListData();
-            JsonUtil.handleArtcileData(mArticleList, pageListData, resultJsondata,refreshing);
-            articleAdapter.notifyData(mArticleList);
-            if(loading && ! refreshing) {
-                pageListDataList.add(pageListData);//页码里面有几个对象，就代表文章列表有几页
-            }
-            resultJsondata = "";
-            //articleList，在外面的一些方法会调用到它
-            articleList.addAll(mArticleList);
-            //刷新状态下，如果文章数组小于固定数量20说明已经出现过的文章被过滤掉，List里面这部分都是新的文章，需要从列表末尾调回顶部
-            if(mArticleList.size() < ARTICLECOUNT_ONEPAGE && mArticleList.size() > 0  && refreshing) {
-                for(int i = mArticleList.size() ; i >= 1; i-- )
-                articleAdapter.notifyItemMoved(articleAdapter.getItemCount(),1);
-                articleAdapter.notifyItemRangeChanged(1,articleAdapter.getItemCount()); //刷新位置，防止数据的位置紊乱
-            }
-            //加载状态下，文章数组数量小于固定数量20，说明文章已经显示完了
-            if(mArticleList.size() < ARTICLECOUNT_ONEPAGE && mArticleList.size() > 0  && loading){
-                    MainActivity.setIsHasMore_AtricleList(false);
-            }
-            mSwipeRefreshLayout.setRefreshing(false);//停止刷新动画
-            if(! loading && refreshing ) {
-                //下滑刷新后定位回第一篇文章
-                mRecyclerView.scrollToPosition(0);
-                mBannerView.startScroll();//重新启动Banner的自动滚动
-                refreshing = false;
-                loading = false;
-            }else{
-                //上拉加载后
-                mBannerView.cancelScroll();//关闭Banner的自动滚动
-                mBannerView.startScroll();//重新启动Banner的自动滚动
-                refreshing = false;
-                loading = false;
-                //上拉加载后，定位到加载出来的位置附近。每一页都有20篇文章，首页文章列表恒>20，不同于搜索界面
-                mRecyclerView.scrollToPosition(articleAdapter.getItemCount() - ARTICLECOUNT_ONEPAGE);
-            }
-        }
-    }
-
-    /**
-     * BannerAsyncTask--发送Banner数据网络请求，处理Banner数据
-     */
-    public class BannerAsyncTask extends AsyncTask<String,Integer,String> {
-
-
-        @Override
-        protected String doInBackground(String... params) {
-            String bannerdata = "";
-            resultBannerdata = GetUtil.sendGet(BaseUrl.getBannerPath(),bannerdata);
-            return resultBannerdata;
-        }
-
-
-        @Override
-        protected void onPostExecute(String data) {
-            super.onPostExecute(data);
-            JsonUtil.handleBannerta(bannerList,data);
-            mBannerAdapter = new BannerViewAdapter(bannerList);
-            mBannerView.setAdapter(mBannerAdapter);
-            mBannerAdapter.notifyDataSetChanged();
-        }
-
-    }
-
-    /**
-     * 给标题栏加载menu菜单布局
-     * @param menu 菜单布局
-     * @return 状态
-     */
-    public boolean onCreateOptionsMenu(Menu menu){
-        getMenuInflater().inflate(R.menu.toolbar_main,menu);
-        return  true;
-    }
-
-
-    /**
-     * 处理标题栏各个按钮的点击事件
-     * @param item 按钮子项
-     * @return 状态
-     */
-    @Override
-    public  boolean onOptionsItemSelected(MenuItem item) {
-        int id = item.getItemId();
-        switch (id) {
-            case 16908332://左上角按钮的实际id，但是用R.id.home 会找不到
-                Intent intent_user = new Intent();
-                intent_user.setClass(MainActivity.this,UserActivity.class);
-                startActivity(intent_user);
-                break;
-            case R.id.item_toolbar_search:
-                Intent intent_search = new Intent();
-                intent_search.setClass(MainActivity.this,Search_ArticleActivity.class);
-                startActivity(intent_search);
-                break;
-        }
-        return true;
-    }
-
-
-    public static boolean isHasMore_AtricleList() {
-        return isHasMore_AtricleList;
-    }
-
-    public static void setIsHasMore_AtricleList(boolean isHasMore_AtricleList) {
-        MainActivity.isHasMore_AtricleList = isHasMore_AtricleList;
-    }
-
     /**
      * 网上的方法--针对安卓P，关闭警告调用了非官方接口的弹窗
      */
-    private void closeAndroidPDialog(){
+    private void closeAndroidPDialog() {
         try {
             Class aClass = Class.forName("android.content.pm.PackageParser$Package");
             Constructor declaredConstructor = aClass.getDeclaredConstructor(String.class);
@@ -426,36 +298,174 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-
-
-    protected void initBoardcaster(){
-        IntentFilter filter = new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION); //动态注册广播
-        this.registerReceiver(receiver,filter);//注册广播
-    }
-
     @Override
-    public boolean onKeyDown(int keyCode,KeyEvent event){
-        if(keyCode== KeyEvent.KEYCODE_BACK){
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if (keyCode == KeyEvent.KEYCODE_BACK) {
             exit();
             return false;
         }
-        return super.onKeyDown(keyCode,event);
+        return super.onKeyDown(keyCode, event);
+    }
+
+    /**
+     * 给标题栏加载menu菜单布局
+     *
+     * @param menu 菜单布局
+     * @return 状态
+     */
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.toolbar_main, menu);
+        return true;
+    }
+
+    /**
+     * 处理标题栏各个按钮的点击事件
+     *
+     * @param item 按钮子项
+     * @return 状态
+     */
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        int id = item.getItemId();
+        switch (id) {
+            case 16908332://左上角按钮的实际id，但是用R.id.home 会找不到
+                Intent intent_user = new Intent();
+                intent_user.setClass(MainActivity.this, UserActivity.class);
+                startActivity(intent_user);
+                break;
+            case R.id.item_toolbar_search:
+                Intent intent_search = new Intent();
+                intent_search.setClass(MainActivity.this, Search_ArticleActivity.class);
+                startActivity(intent_search);
+                break;
+        }
+        return true;
     }
 
     /**
      * 控制返回键连续点击才两次
      * 退出若两次点击返回键时间小于2秒就退出
      */
-    private void exit(){
-        if((System.currentTimeMillis()-exitTime)>2000){
+    private void exit() {
+        if ((System.currentTimeMillis() - exitTime) > 2000) {
             Toast.makeText(getApplicationContext(),
-                    "再按一次退出程序",Toast.LENGTH_SHORT).show();
-            exitTime=System.currentTimeMillis();
-        }else{
-                finish();
-                System.exit(0);
+                    "再按一次退出程序", Toast.LENGTH_SHORT).show();
+            exitTime = System.currentTimeMillis();
+        } else {
+            finish();
+            System.exit(0);
+        }
+    }
+
+    /**
+     * ArticleListTask--发送请求，处理JSON数据，显示文章
+     */
+    public class ArticleListTask extends AsyncTask<String, Integer, String> {
+
+        private List<Article> mArticleList = new ArrayList<>();
+
+        /**
+         * @param params 启动任务执行的输入参数 params[0]
+         * @return 后台计算结果, 返回給onPostExecute方法
+         */
+        @Override
+        protected String doInBackground(String... params) {
+            for (int i = 0; i < 1; i++) {
+                //初始化文章列表里面的数据
+                if (loading && !refreshing) {
+                    //加载更多时，令i保持在最新要出来的一页
+                    int index = pageListDataList.size();
+                    i = index + i;
+                }
+                String articleJsondata = "";
+                resultArticledata = GetUtil.sendGet(params[0] + i + "/json", articleJsondata);
+            }
+            return resultArticledata;
+        }
+
+        /**
+         * 可以设置进度条对话框，缓解在一次性处理数据过多时屏幕白屏的尴尬
+         */
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+        }
+
+
+        /**
+         * 为RecycleView的Adapter装填数据
+         *
+         * @param resultdata 关于文章列表的JSON数据，doInbackground方法返回的结果
+         */
+        @Override
+        protected void onPostExecute(String resultdata) {
+            //Article
+            String resultJsondata = resultdata;
+            super.onPostExecute(resultJsondata);
+            System.out.println(resultJsondata);
+            mRecyclerView.setAdapter(articleAdapter);
+            pageListData = new PageListData();
+            JsonUtil.handleArtcileData(mArticleList, pageListData, resultJsondata, refreshing);
+            articleAdapter.notifyData(mArticleList);
+            if (loading && !refreshing) {
+                pageListDataList.add(pageListData);//页码里面有几个对象，就代表文章列表有几页
+            }
+            resultJsondata = "";
+            //articleList，在外面的一些方法会调用到它
+            articleList.addAll(mArticleList);
+            //刷新状态下，如果文章数组小于固定数量20说明已经出现过的文章被过滤掉，List里面这部分都是新的文章，需要从列表末尾调回顶部
+            if (mArticleList.size() < ARTICLECOUNT_ONEPAGE && mArticleList.size() > 0 && refreshing) {
+                for (int i = mArticleList.size(); i >= 1; i--)
+                    articleAdapter.notifyItemMoved(articleAdapter.getItemCount(), 1);
+                articleAdapter.notifyItemRangeChanged(1, articleAdapter.getItemCount()); //刷新位置，防止数据的位置紊乱
+            }
+            //加载状态下，文章数组数量小于固定数量20，说明文章已经显示完了
+            if (mArticleList.size() < ARTICLECOUNT_ONEPAGE && mArticleList.size() > 0 && loading) {
+                MainActivity.setIsHasMore_AtricleList(false);
+            }
+            mSwipeRefreshLayout.setRefreshing(false);//停止刷新动画
+            if (!loading && refreshing) {
+                //下滑刷新后定位回第一篇文章
+                mRecyclerView.scrollToPosition(0);
+                mBannerView.startScroll();//重新启动Banner的自动滚动
+                refreshing = false;
+                loading = false;
+            } else {
+                //上拉加载后
+                mBannerView.cancelScroll();//关闭Banner的自动滚动
+                mBannerView.startScroll();//重新启动Banner的自动滚动
+                refreshing = false;
+                loading = false;
+                //上拉加载后，定位到加载出来的位置附近。每一页都有20篇文章，首页文章列表恒>20，不同于搜索界面
+                mRecyclerView.scrollToPosition(articleAdapter.getItemCount() - ARTICLECOUNT_ONEPAGE);
             }
         }
+    }
+
+    /**
+     * BannerAsyncTask--发送Banner数据网络请求，处理Banner数据
+     */
+    public class BannerAsyncTask extends AsyncTask<String, Integer, String> {
+
+
+        @Override
+        protected String doInBackground(String... params) {
+            String bannerdata = "";
+            resultBannerdata = GetUtil.sendGet(BaseUrl.getBannerPath(), bannerdata);
+            return resultBannerdata;
+        }
+
+
+        @Override
+        protected void onPostExecute(String data) {
+            super.onPostExecute(data);
+            JsonUtil.handleBannerta(bannerList, data);
+            mBannerAdapter = new BannerViewAdapter(bannerList);
+            mBannerView.setAdapter(mBannerAdapter);
+            mBannerAdapter.notifyDataSetChanged();
+        }
+
+    }
 }
 
 

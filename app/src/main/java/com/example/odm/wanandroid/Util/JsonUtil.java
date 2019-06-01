@@ -43,7 +43,6 @@ public class JsonUtil {
             JSONObject data = value.getJSONObject("data");
             String username = data.getString("username");
             user.setUsername(username);
-
         } catch (JSONException e) {
             e.printStackTrace();
         }
@@ -56,7 +55,7 @@ public class JsonUtil {
      * @param acceptdata   接受的JSON数据
      * @return articleList  填充了文章的文章列表
      */
-    public static void handleArtcileData(List<Article> articleList , PageListData pageListData, String acceptdata ,boolean isRefresh) {
+    public static void handleArtcileData(List<Article> articleList , PageListData pageListData, String acceptdata ,boolean refreshing) {
         try{
             if(acceptdata == null){
                 System.out.println("Article数据为空");
@@ -72,14 +71,14 @@ public class JsonUtil {
                 for(int i = 0; i <datas.length(); i++) {
                     JSONObject content = datas.getJSONObject(i);
                     //通过传参进来判定此时处理的是需要更新的数据还是普通的加载下一页的数据
-                    if(isRefresh){
+                    if(refreshing){
                         boolean isShown = false;
                         //当前在刷新文章，需要过滤掉已有的文章，需要显示id还没出现在数据库的文章
                         Cursor cursor = db.query("Article",null, null, null, null, null, null);
                         if (cursor.moveToFirst()) {
                             do {
                                int id = cursor.getInt(cursor.getColumnIndex("id"));
-                                if (content.getInt("id") == id) { //数据库有相同的标题（读过的)，设置为灰色，否则设置为黑色
+                                if (content.getInt("id") == id) { //数据库有相同的标题（读过的)，标为已展示属性
                                     isShown = true;
                                     break;
                                 }
@@ -91,9 +90,9 @@ public class JsonUtil {
                         }
                     }
                     Article article = new Article(  content.getString("superChapterName"),
-                            content.getString("author"),
-                            content.getString("niceDate"),
-                            content.getString("title"));
+                                                    content.getString("author"),
+                                                    content.getString("niceDate"),
+                                                    content.getString("title"));
                     article.setLink(content.getString("link"));  //link-->webview跳转
                     article.setId(content.getInt("id"));         //id-->刷新需要判断是否已被显示
                     articleList.add(article);                    //文章列表加入文章对象
@@ -106,6 +105,11 @@ public class JsonUtil {
 
     }
 
+    /**
+     * 处理关于banner轮播图的数据
+     * @param bannerList banner列表
+     * @param acceptdata 接收的Json数据
+     */
     public static void handleBannerta(List<Banner> bannerList, String acceptdata){
         try {
             if(acceptdata == null){

@@ -69,7 +69,7 @@ public class PostUtil {
                 int len = 0;
                 byte buffer[] = new byte[1024];
                 while ((len = is.read(buffer)) != -1) {
-                    //根据读取的长度写入到os对象中
+                    //根据读取的长度写入到字节输出流对象中
                     baos.write(buffer , 0 , len);
                 }
                 //释放资源

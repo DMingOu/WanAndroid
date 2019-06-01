@@ -47,6 +47,7 @@ public class BannerViewAdapter extends BannerViewBaseAdapter {
         wrapperImageView = (WrapperImageView)mView.findViewById(R.id.banner_image);
         wrapperImageView.isUseCache = true;//使用缓存
         wrapperImageView.setImageURL(bannerbean.getImagePath());//加载获取对应的网络图片
+        //轮播图点击事件
         wrapperImageView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {

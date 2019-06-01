@@ -38,7 +38,6 @@ public class GetUtil {
                             resultdata += line;
                         }
                         if (resultdata == null) System.out.println("接收数据一开始就为空了");
-                        //handler.sendEmptyMessage(0x01);  //请求完毕，返回自己自定义的信息 id，与主线程通知，开启下一步操作
                     }
                 } catch (MalformedURLException e) {
                     e.printStackTrace();

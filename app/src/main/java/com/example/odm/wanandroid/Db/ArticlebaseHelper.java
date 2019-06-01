@@ -5,7 +5,7 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
 /**
- * 存储Article的标题的数据库
+ * 存储Article的属性的数据库
  * Created by ODM on 2019/5/9.
  */
 

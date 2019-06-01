@@ -63,12 +63,12 @@ public class Search_ArticleActivity extends AppCompatActivity {
     private int load_times = 0; //加载的次数，被用于发送文章请求，控制页码
     final  int ARTICLECOUNT_ONEPAGE = 20;
 
-    Handler handler = new Handler(){//此函数是属于MainActivity.java所在线程的函数方法，所以可以直接调用MainActivity的 所有方法。
+    Handler handler = new Handler(){
         public void handleMessage(Message msg) {
             if (msg.what == 0x02) {   //
                 //此处写handler处理操作
             } else {
-                Toast.makeText(Search_ArticleActivity.this, "请重新输入地址：", Toast.LENGTH_SHORT).show();
+                //Toast.makeText(Search_ArticleActivity.this, "请重新输入地址：", Toast.LENGTH_SHORT).show();
             }
         }
     };
@@ -78,16 +78,27 @@ public class Search_ArticleActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_search_article);
         dbHelper = new ArticlebaseHelper(this,"Article.db",null,1);
-        initBoardcaster();
+
         initViews();
         initArticleAdapter();
     }
 
     @Override
-    protected void onDestroy() {
-        super.onDestroy();
+    protected void onResume() {
+        super.onResume();
+        initBoardcaster();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
         unregisterReceiver(receiver);//注销注册的广播
         handler.removeCallbacksAndMessages(null);//断掉与Handler 的联系，销毁Handler 消息的处理,防止handler导致内存泄漏
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
     }
 
     /**

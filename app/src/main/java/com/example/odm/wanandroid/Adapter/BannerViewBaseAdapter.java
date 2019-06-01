@@ -40,6 +40,7 @@ public abstract class BannerViewBaseAdapter extends PagerAdapter {
                     mList.add(getView(container,i));
                 }
             }
+            //判断是否已存在这个View，若有就先移除再增加
             mView = mList.get(position % getSize());
             if (mView.getParent() != null) {
                 container.removeView(mView);

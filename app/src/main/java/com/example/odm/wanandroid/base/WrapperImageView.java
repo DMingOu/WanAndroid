@@ -1,6 +1,7 @@
 package com.example.odm.wanandroid.base;
 
 /**
+ * ImageView包装类
  * Created by ODM on 2019/5/19.
  */
 
@@ -147,7 +148,7 @@ public class WrapperImageView extends ImageView {
 
     //使用缓存图片
     public void useCacheImage() {
-        //创建路径一样的文件
+        //获取路径一样的文件
         File file = new File(getContext().getCacheDir(), getURLPath());
         //判断文件是否存在
         if (file != null && file.length() > 0) {
@@ -164,7 +165,7 @@ public class WrapperImageView extends ImageView {
             } catch (FileNotFoundException e) {
                 e.printStackTrace();
             }
-        }else {
+        } else {
             //使用网络图片
             useNetWorkImage();
         }
@@ -172,37 +173,34 @@ public class WrapperImageView extends ImageView {
 
     /**
      * 缓存网络的图片
-     * @param inputStream 网络的输入流
+     * @param inputStream 网络输入流
      */
     public void cacheImage(InputStream inputStream) {
         try {
             File file = new File(getContext().getCacheDir(), getURLPath());
             FileOutputStream fos = new FileOutputStream(file);
-            int len;
             byte[] buffer = new byte[1024];
+            int len;
             while ((len = inputStream.read(buffer)) != -1) {
                 fos.write(buffer, 0, len);
             }
             fos.close();
-            Log.e("MyImageView","缓存成功");
         } catch (IOException e) {
             e.printStackTrace();
-            Log.e("MyImageView","缓存失败");
         }
     }
 
     /**
-     * 根据网址生成一个文件名
+     * 根据URL生成一个文件名
      * @return 文件名
      */
     public String getURLPath() {
-        StringBuilder urlStr2 = new StringBuilder();
+        StringBuilder urlStr = new StringBuilder();
         String[] strings = imagePath.split("\\/");
         for (String string : strings) {
-            urlStr2.append(string);
+            urlStr.append(string);
         }
-        Log.e("WrapperImageView","文件名："+urlStr2.toString());
-        return urlStr2.toString();
+        return urlStr.toString();
     }
 
 
@@ -234,7 +232,7 @@ public class WrapperImageView extends ImageView {
         BitmapFactory.Options options = new BitmapFactory.Options();
         options.inJustDecodeBounds = true;
         BitmapFactory.decodeStream(is, null, options);
-        //获取图片并进行压缩
+        //获取图片并根据压缩比率进行压缩
         options.inSampleSize = getInSampleSize(options);
         options.inJustDecodeBounds = false;
         return BitmapFactory.decodeStream(is2, null, options);
@@ -243,19 +241,19 @@ public class WrapperImageView extends ImageView {
     /**
      * 获得需要压缩的比率
      *
-     * @param options 需要传入已经BitmapFactory.decodeStream(is, null, options);
+     * @param options 需要传入已经进行BitmapFactory.decodeStream(is, null, options);
      * @return 返回压缩的比率，最小为1
      */
     public int getInSampleSize(BitmapFactory.Options options) {
         int inSampleSize = 1;
-        int realWith = realImageViewWith();
+        int realWidth = realImageViewWidth();
         int realHeight = realImageViewHeight();
 
         int outWidth = options.outWidth;
         int outHeight = options.outHeight;
         //获取比率最大的那个
-        if (outWidth > realWith || outHeight > realHeight) {
-            int withRadio = Math.round(outWidth / realWith);
+        if (outWidth > realWidth || outHeight > realHeight) {
+            int withRadio = Math.round(outWidth / realWidth);
             int heightRadio = Math.round(outHeight / realHeight);
             inSampleSize = withRadio > heightRadio ? withRadio : heightRadio;
         }
@@ -266,14 +264,13 @@ public class WrapperImageView extends ImageView {
 
     /**
      * 获取ImageView实际的宽度
-     *
-     * @return 返回ImageView实际的宽度
+     * @return width 返回ImageView实际的宽度
      */
-    public int realImageViewWith() {
+    public int realImageViewWidth() {
         DisplayMetrics displayMetrics = getContext().getResources().getDisplayMetrics();
         ViewGroup.LayoutParams layoutParams = getLayoutParams();
 
-        //如果ImageView设置了宽度就可以获取实在宽带
+        //如果ImageView设置了宽度就可以获取实际宽度
         int width = getWidth();
         if (width <= 0) {
             //如果ImageView没有设置宽度，就获取父级容器的宽度
@@ -299,7 +296,7 @@ public class WrapperImageView extends ImageView {
         DisplayMetrics displayMetrics = getContext().getResources().getDisplayMetrics();
         ViewGroup.LayoutParams layoutParams = getLayoutParams();
 
-        //如果ImageView设置了高度就可以获取实在宽度
+        //如果ImageView设置了高度就可以获取实际高度
         int height = getHeight();
         if (height <= 0) {
             //如果ImageView没有设置高度，就获取父级容器的高度

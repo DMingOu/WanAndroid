@@ -34,10 +34,6 @@ public class ArticleAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
     private Context mContext;
     private View mHeaderView;
     private boolean searching = false; //搜索界面不显示头布局，区分变量
-
-
-
-
     private ArticleRecyclerViewOnItemClickListener onArticleItemClickListener;//轻点击
 //    private ArticleRecyclerViewOnItemLongClickListener onArticleItemLongClickListener;//长按
 
@@ -96,6 +92,9 @@ public class ArticleAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         }
     }
 
+    /**
+     * 顶部加载布局Holder--轮播图
+     */
     public class HeaderViewHolder extends RecyclerView.ViewHolder{
 
         private HeaderViewHolder(View view) {
@@ -216,7 +215,7 @@ public class ArticleAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
     /**
      * 刷新adpter的数据，防止数据源与内部数据大小冲突
-     * @param articleList_new
+     * @param articleList_new 外部数据集
      */
     public void notifyData(List<Article> articleList_new) {
         if (articleList_new != null) {
@@ -248,6 +247,10 @@ public class ArticleAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         return ITEM_TYPE_NORMAL;
     }
 
+    /**
+     * 插入顶部头布局
+     * @param headerView
+     */
     public void setHeaderView(View headerView) {
         mHeaderView = headerView;
         notifyItemInserted(0);

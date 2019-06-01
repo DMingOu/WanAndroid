@@ -12,6 +12,7 @@ import android.provider.Settings;
 import com.example.odm.wanandroid.base.HandlerManger;
 
 /**
+ * 网络状态监听广播
  * Created by ODM on 2019/5/14.
  */
 

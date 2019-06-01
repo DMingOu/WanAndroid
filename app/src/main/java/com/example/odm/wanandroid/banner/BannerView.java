@@ -46,22 +46,23 @@ public class BannerView extends FrameLayout implements ViewPager.OnPageChangeLis
     private ImageView[] mPoints;
 
     /**
-     *  最后一个圆点
+     *  当前圆点
      */
     private int mLastPos;
 
     /**
      *  当前是否触摸
      */
-    private boolean isTouch = false;
+    private boolean touching = false;
 
     private ScheduledExecutorService executorService;
 
+    public static final int SCOLL_SUCCESS = 0;
     private Handler handler = new Handler() {
         @Override
         public void handleMessage(Message msg) {
             switch (msg.what) {
-                case 0:
+                case SCOLL_SUCCESS:
                     postDelayed(new Runnable() {
                         @Override
                         public void run() {
@@ -96,9 +97,7 @@ public class BannerView extends FrameLayout implements ViewPager.OnPageChangeLis
         mPointCount = mAdapter_BannerViewBase.getSize();
         mViewPager.setAdapter(mAdapter_BannerViewBase);
         initPoint();
-        /**
-         *  防止第二次刷新后 显示空白页面
-         */
+         //防止第二次刷新后 显示空白页面
         mViewPager.setCurrentItem(mPointCount*100+3);
         startScroll();
     }
@@ -110,7 +109,6 @@ public class BannerView extends FrameLayout implements ViewPager.OnPageChangeLis
         if (mPointCount == 0) {
             return;
         }
-
         mPoints = new ImageView[mPointCount];
         //清除所有圆点
         mPointContainer.removeAllViews();
@@ -120,11 +118,18 @@ public class BannerView extends FrameLayout implements ViewPager.OnPageChangeLis
             mPointContainer.addView(view);
             mPoints[i] = view;
         }
+        //初始化加载圆点，第一个圆点为被选中状态
         if (mPoints[0] != null) {
             mPoints[0].setImageResource(R.drawable.point_selected);
         }
         mLastPos = 0;
     }
+
+
+    /**
+     * 将当前位置的圆点设置被选中状态
+     * @param currentPoint 最新圆点的位置
+     */
     private void changePoint(int currentPoint) {
         if (mLastPos == currentPoint) {
             return;
@@ -139,10 +144,10 @@ public class BannerView extends FrameLayout implements ViewPager.OnPageChangeLis
         executorService.scheduleAtFixedRate(new Runnable() {
             @Override
             public void run() {
-                if (isTouch) {
-                    return;
-                }
-                handler.sendEmptyMessage(0);
+                if (touching) {
+                    return; //触摸状态不轮播
+                }else{
+                    handler.sendEmptyMessage(SCOLL_SUCCESS);}
             }
         },1000,3000, TimeUnit.MILLISECONDS);
     }
@@ -179,14 +184,19 @@ public class BannerView extends FrameLayout implements ViewPager.OnPageChangeLis
 
     }
 
+    /**
+     * 监听用户是否触碰屏幕
+     * @param ev
+     * @return
+     */
     @Override
     public boolean dispatchTouchEvent(MotionEvent ev) {
         switch (ev.getAction()) {
             case MotionEvent.ACTION_DOWN:
-                isTouch = true;
+                touching = true;
                 break;
             case MotionEvent.ACTION_UP:
-                isTouch = false;
+                touching = false;
                 break;
             default:
                 break;

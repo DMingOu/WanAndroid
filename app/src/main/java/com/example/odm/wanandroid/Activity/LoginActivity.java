@@ -41,7 +41,6 @@ public class LoginActivity extends AppCompatActivity {
     private JsonUtil jsonUtil;
     private PostUtil postUtil;
     private User LoginUser;
-    final String LoginPath = "https://www.wanandroid.com/user/login";
 
 
     @Override
@@ -115,7 +114,7 @@ public class LoginActivity extends AppCompatActivity {
                         mLoginEt_password.requestFocus();
                     }
                 } else {
-                    //开启子线程，执行注册操作
+                    //开启子线程，执行登录操作
                     new Thread() {
                         public void run(){
                             final String keyString;
